@@ -8,7 +8,7 @@ threading of messages and threads.
 The only required setup is an OAuth token - each of these options can
 be set via ENV or `SlackLine.configure`:
 
-* `slack_app_token` or `SLACK_LINE_SLACK_APP_TOKEN` (required) - this
+* `slack_token` or `SLACK_LINE_SLACK_TOKEN` (required) - this
   allows the library to send messages and make API requests.
 * `look_up_users` or `SLACK_LINE_LOOK_UP_USERS` (default false) - if
   your workspace refuses to turn `@somebody` mentions into links or
@@ -31,7 +31,7 @@ set them on the singleton configuration object:
 
 ```ruby
 SlackLine.configure do |config|
-  config.slack_app_token = ENV["SLACK_TOKEN"]
+  config.slack_token = ENV["SLACK_TOKEN"]
   config.look_up_users = true
   config.bot_name = "CI Bot"
   config.default_channel = "#ci-flow"
