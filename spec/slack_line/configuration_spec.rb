@@ -67,4 +67,41 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.allow_dsl).to be false
     end
   end
+
+  context "when environment variables are set" do
+    def mock_envar(name, value)
+      allow(ENV).to receive(:key?).with(name).and_return(true)
+      allow(ENV).to receive(:fetch).with(name).and_return(value)
+    end
+
+    before do
+      allow(ENV).to receive(:key?).and_call_original
+      allow(ENV).to receive(:fetch).and_call_original
+      mock_envar("SLACK_LINE_SLACK_TOKEN", "env_token")
+      mock_envar("SLACK_LINE_LOOK_UP_USERS", "true")
+      mock_envar("SLACK_LINE_BOT_NAME", "EnvBot")
+      mock_envar("SLACK_LINE_DEFAULT_CHANNEL", "#env-channel")
+      mock_envar("SLACK_LINE_ALLOW_DSL", "false")
+    end
+
+    it "uses values from environment variables" do
+      expect(configuration.slack_token).to eq("env_token")
+      expect(configuration.look_up_users).to be true
+      expect(configuration.bot_name).to eq("EnvBot")
+      expect(configuration.default_channel).to eq("#env-channel")
+      expect(configuration.allow_dsl).to be false
+    end
+
+    context "AND some overrides" do
+      let(:overrides) { {slack_token: "override_token", allow_dsl: true} }
+
+      it "applies overrides over environment variables" do
+        expect(configuration.slack_token).to eq("override_token")
+        expect(configuration.look_up_users).to be true
+        expect(configuration.bot_name).to eq("EnvBot")
+        expect(configuration.default_channel).to eq("#env-channel")
+        expect(configuration.allow_dsl).to be true
+      end
+    end
+  end
 end
