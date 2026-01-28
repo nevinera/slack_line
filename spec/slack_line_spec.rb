@@ -1,7 +1,8 @@
 RSpec.describe SlackLine do
+  # Yes, mocking the class under test is gross. But this is much simpler than
+  # the alternatives.
+
   describe ".configure" do
-    # yes, mocking the class under test is gross. But this is much simpler than
-    # the alternatives.
     before { allow(SlackLine).to receive(:configuration).and_return(temp_config) }
 
     let(:temp_config) { SlackLine::Configuration.new }
@@ -23,6 +24,48 @@ RSpec.describe SlackLine do
 
     it "returns the same instance on multiple calls" do
       expect(configuration).to be(described_class.configuration)
+    end
+  end
+
+  describe ".client" do
+    subject(:client) { described_class.client }
+
+    before { allow(SlackLine).to receive(:configuration).and_return(temp_config) }
+
+    let(:temp_config) { SlackLine::Configuration.new(slack_token: "foo-token") }
+
+    it { is_expected.to be_a(described_class::Client) }
+
+    it "returns the same instance on multiple calls" do
+      expect(client).to be(described_class.client)
+    end
+  end
+
+  describe "forwarded methods" do
+    let(:mock_client) do
+      instance_double(
+        SlackLine::Client,
+        message: nil,
+        thread: nil,
+        send_message: nil,
+        send_thread: nil
+      )
+    end
+
+    before { allow(SlackLine).to receive(:client).and_return(mock_client) }
+
+    it "forwards those module methods to the singleton client" do
+      SlackLine.message("Hello")
+      expect(mock_client).to have_received(:message).with("Hello")
+
+      SlackLine.thread("Thread start")
+      expect(mock_client).to have_received(:thread).with("Thread start")
+
+      SlackLine.send_message("Channel1", "Hello Channel")
+      expect(mock_client).to have_received(:send_message).with("Channel1", "Hello Channel")
+
+      SlackLine.send_thread("Thread1", "Reply in thread")
+      expect(mock_client).to have_received(:send_thread).with("Thread1", "Reply in thread")
     end
   end
 end
