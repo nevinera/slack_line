@@ -25,6 +25,13 @@ be set via ENV or `SlackLine.configure`:
   to `false`, all of the block-accepting methods will yield their
   acceptors (they do anyway), and you'll need to call the dsl methods
   on those acceptors instead.
+* `per_message_delay` or `SLACK_LINE_PER_MESSAGE_DELAY` is a float,
+  defaulting to 0.0. SlackLine will `sleep` for that duration after
+  each message is posted, to allow you to avoid hitting rate-limits
+  from posting many messages in a row.
+* `per_thread_delay` or `SLACK_LINE_PER_THREAD_DELAY` is a float as
+  well - SlackLine will `sleep` for this duration after each _thread_
+  is posted, and after each non-thread message is posted.
 
 You can just set those via the environment variables, but you can also
 set them on the singleton configuration object:
@@ -36,6 +43,8 @@ SlackLine.configure do |config|
   config.bot_name = "CI Bot"
   config.default_channel = "#ci-flow"
   config.allow_dsl = false
+  config.per_message_delay = 0.2
+  config.per_thread_delay = 2.0
 end
 ```
 
@@ -45,7 +54,7 @@ Are you ready? Because this is going to be _so easy_.
 
 ```ruby
 # Send a simple message directly
-sent_message = SlackLine.send_message("Something happened!", to: "#general")
+sent_message = SlackLine.post_message("Something happened!", to: "#general")
 
 # Construct a more complex message, then send it
 msg = SlackLine.message do
@@ -58,13 +67,13 @@ msg = SlackLine.message do
 
   text "More details.."
 end
-sent_message = msg.send(to: "#general")
+sent_message = msg.post(to: "#general")
 
 # Send a _thread_ of messages (strings generate simple messages)
-sent_thread = SlackLine.send_thread("First text", "Second text", msg, to: "#general")
+sent_thread = SlackLine.post_thread("First text", "Second text", msg, to: "#general")
 
 # You can also build them inline via dsl
-sent_thread = SlackLine.send_thread(to: "@dm_recipient") do
+sent_thread = SlackLine.post_thread(to: "@dm_recipient") do
   message do
     context "yeah"
     text "That's right"
@@ -107,7 +116,7 @@ Slackline.configure do |config|
   config.bot_name = "FooBot"
 end
 
-# Now SlackLine.send_message (et al) will use SlackLine.client,
+# Now SlackLine.post_message (et al) will use SlackLine.client,
 # configured as above.
 
 BAR_SLACK = SlackLine::Client.new(default_channel: "#team-bar", bot_name: "BarBot")
@@ -115,6 +124,6 @@ BAR_SLACK = SlackLine::Client.new(default_channel: "#team-bar", bot_name: "BarBo
 # And now you can call all of those methods on `BAR_SLACK` to use a
 # different default channel and name
 
-BAR_SLACK.send_thread("Message 1", "Message 2")
-BAR_SLACK.send_message("Message 3", to: "#bar-team-3")
+BAR_SLACK.post_thread("Message 1", "Message 2")
+BAR_SLACK.post_message("Message 3", to: "#bar-team-3")
 ```
