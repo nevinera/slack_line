@@ -45,7 +45,7 @@ Are you ready? Because this is going to be _so easy_.
 
 ```ruby
 # Send a simple message directly
-sent_message = SlackLine.send_message("#general", "Something happened!")
+sent_message = SlackLine.send_message("Something happened!", to: "#general")
 
 # Construct a more complex message, then send it
 msg = SlackLine.message do
@@ -58,13 +58,13 @@ msg = SlackLine.message do
 
   text "More details.."
 end
-sent_message = msg.send!("#general")
+sent_message = msg.send(to: "#general")
 
 # Send a _thread_ of messages (strings generate simple messages)
-sent_thread = SlackLine.send_thread("#general", "First text", "Second text", msg)
+sent_thread = SlackLine.send_thread("First text", "Second text", msg, to: "#general")
 
 # You can also build them inline via dsl
-sent_thread = SlackLine.send_thread("@dm_recipient") do
+sent_thread = SlackLine.send_thread(to: "@dm_recipient") do
   message do
     context "yeah"
     text "That's right"
@@ -90,4 +90,31 @@ sent_thread.first.update "Problem Resolved!"
 sent_thread.detect { |m| m =~ /Not yet safe/ }&.update do
   text "it's safe now"
 end
+```
+
+## Multiple Configurations
+
+If you're working in a context where you need to support multiple
+SlackLine configurations, don't worry! The singleton central config is
+what the singleton central Client uses (that's what all of the top-level
+SlackLine methods dispatch to), but you can construct additional clients
+with their own configs easily:
+
+```ruby
+Slackline.configure do |config|
+  config.slack_token = ENV["TOKEN"]
+  config.default_channel = "#general"
+  config.bot_name = "FooBot"
+end
+
+# Now SlackLine.send_message (et al) will use SlackLine.client,
+# configured as above.
+
+BAR_SLACK = SlackLine::Client.new(default_channel: "#team-bar", bot_name: "BarBot")
+
+# And now you can call all of those methods on `BAR_SLACK` to use a
+# different default channel and name
+
+BAR_SLACK.send_thread("Message 1", "Message 2")
+BAR_SLACK.send_message("Message 3", to: "#bar-team-3")
 ```
