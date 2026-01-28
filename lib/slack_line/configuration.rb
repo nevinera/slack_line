@@ -1,13 +1,18 @@
 module SlackLine
   class Configuration
-    attr_accessor :slack_token, :look_up_users, :bot_name, :default_channel, :allow_dsl
+    attr_accessor :slack_token,
+      :look_up_users, :bot_name,
+      :default_channel, :allow_dsl,
+      :per_message_delay, :per_thread_delay
 
     DEFAULTS = {
       slack_token: nil,
       look_up_users: false,
       bot_name: nil,
       default_channel: nil,
-      allow_dsl: true
+      allow_dsl: true,
+      per_message_delay: 0.0,
+      per_thread_delay: 0.0
     }.freeze
 
     def initialize(base_config = nil, **overrides)
@@ -19,6 +24,8 @@ module SlackLine
       @bot_name = cascade(:bot_name, "SLACK_LINE_BOT_NAME", :string)
       @default_channel = cascade(:default_channel, "SLACK_LINE_DEFAULT_CHANNEL", :string)
       @allow_dsl = cascade(:allow_dsl, "SLACK_LINE_ALLOW_DSL", :boolean)
+      @per_message_delay = cascade(:per_message_delay, "SLACK_LINE_PER_MESSAGE_DELAY", :float)
+      @per_thread_delay = cascade(:per_thread_delay, "SLACK_LINE_PER_THREAD_DELAY", :float)
     end
 
     private
@@ -40,6 +47,8 @@ module SlackLine
 
       if env_type == :boolean
         %w[1 true yes].include?(value.downcase)
+      elsif env_type == :float
+        value.to_f
       else
         value
       end
