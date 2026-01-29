@@ -1,8 +1,7 @@
 module SlackLine
   class Configuration
     attr_accessor :slack_token,
-      :look_up_users, :bot_name,
-      :default_channel, :allow_dsl,
+      :look_up_users, :bot_name, :default_channel,
       :per_message_delay, :per_thread_delay
 
     DEFAULTS = {
@@ -10,7 +9,6 @@ module SlackLine
       look_up_users: false,
       bot_name: nil,
       default_channel: nil,
-      allow_dsl: true,
       per_message_delay: 0.0,
       per_thread_delay: 0.0
     }.freeze
@@ -23,7 +21,6 @@ module SlackLine
       @look_up_users = cascade(:look_up_users, "SLACK_LINE_LOOK_UP_USERS", :boolean)
       @bot_name = cascade(:bot_name, "SLACK_LINE_BOT_NAME", :string)
       @default_channel = cascade(:default_channel, "SLACK_LINE_DEFAULT_CHANNEL", :string)
-      @allow_dsl = cascade(:allow_dsl, "SLACK_LINE_ALLOW_DSL", :boolean)
       @per_message_delay = cascade(:per_message_delay, "SLACK_LINE_PER_MESSAGE_DELAY", :float)
       @per_thread_delay = cascade(:per_thread_delay, "SLACK_LINE_PER_THREAD_DELAY", :float)
     end

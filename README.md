@@ -20,11 +20,6 @@ be set via ENV or `SlackLine.configure`:
   (either a channel with the leading pound-sign, or a user's handle
   with a leading at-sign). When not supplied, all `send` calls are
   required to specify a target instead.
-* `allow_dsl` or `SLACK_LINE_ALLOW_DSL` - on by default, but if you
-  really hate the dsl-style usage, you can disable it. If you set this
-  to `false`, all of the block-accepting methods will yield their
-  acceptors (they do anyway), and you'll need to call the dsl methods
-  on those acceptors instead.
 * `per_message_delay` or `SLACK_LINE_PER_MESSAGE_DELAY` is a float,
   defaulting to 0.0. SlackLine will `sleep` for that duration after
   each message is posted, to allow you to avoid hitting rate-limits
@@ -42,7 +37,6 @@ SlackLine.configure do |config|
   config.look_up_users = true
   config.bot_name = "CI Bot"
   config.default_channel = "#ci-flow"
-  config.allow_dsl = false
   config.per_message_delay = 0.2
   config.per_thread_delay = 2.0
 end
