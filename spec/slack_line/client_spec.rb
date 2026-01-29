@@ -18,9 +18,14 @@ RSpec.describe SlackLine::Client do
   end
 
   describe "#message" do
-    subject(:message) { client.message }
+    subject(:message) { client.message("Hello") }
 
-    it { is_expected.to be_nil }
+    it { is_expected.to be_a(SlackLine::Message) }
+
+    it "produces the expected content" do
+      expect(message.content.as_json)
+        .to eq([{text: {text: "Hello", type: "mrkdwn"}, type: "section"}])
+    end
   end
 
   describe "#thread" do

@@ -8,7 +8,7 @@ module SlackLine
 
     attr_reader :configuration
 
-    def message(*_args, **_kwargs) = nil
+    def message(text_or_blocks = nil, &dsl_block) = Message.new(text_or_blocks, client: self, &dsl_block)
 
     def thread(*_args, **_kwargs) = nil
 
