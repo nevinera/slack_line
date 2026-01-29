@@ -1,12 +1,14 @@
 RSpec.describe SlackLine::Configuration do
   subject(:configuration) { described_class.new(base_config, **overrides) }
 
-  without_env("SLACK_LINE_SLACK_TOKEN",
-              "SLACK_LINE_LOOK_UP_USERS",
-              "SLACK_LINE_BOT_NAME",
-              "SLACK_LINE_DEFAULT_CHANNEL",
-              "SLACK_LINE_PER_MESSAGE_DELAY",
-              "SLACK_LINE_PER_THREAD_DELAY")
+  without_env(
+    "SLACK_LINE_SLACK_TOKEN",
+    "SLACK_LINE_LOOK_UP_USERS",
+    "SLACK_LINE_BOT_NAME",
+    "SLACK_LINE_DEFAULT_CHANNEL",
+    "SLACK_LINE_PER_MESSAGE_DELAY",
+    "SLACK_LINE_PER_THREAD_DELAY"
+  )
 
   let(:base_config) { nil }
   let(:overrides) { {} }
