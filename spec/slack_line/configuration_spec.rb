@@ -94,7 +94,6 @@ RSpec.describe SlackLine::Configuration do
   end
 
   context "when environment variables are set" do
-
     before do
       mock_envar("SLACK_LINE_SLACK_TOKEN", "env_token")
       mock_envar("SLACK_LINE_LOOK_UP_USERS", "true")
