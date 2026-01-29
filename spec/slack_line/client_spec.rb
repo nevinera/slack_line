@@ -1,4 +1,6 @@
 RSpec.describe SlackLine::Client do
+  without_env("SLACK_LINE_SLACK_TOKEN")
+
   subject(:client) { described_class.new(nil, **overrides) }
   let(:overrides) { {slack_token: "fake-slack-token"} }
 

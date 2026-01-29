@@ -1,27 +1,15 @@
 RSpec.describe SlackLine::Configuration do
   subject(:configuration) { described_class.new(base_config, **overrides) }
 
+  without_env("SLACK_LINE_SLACK_TOKEN",
+              "SLACK_LINE_LOOK_UP_USERS",
+              "SLACK_LINE_BOT_NAME",
+              "SLACK_LINE_DEFAULT_CHANNEL",
+              "SLACK_LINE_PER_MESSAGE_DELAY",
+              "SLACK_LINE_PER_THREAD_DELAY")
+
   let(:base_config) { nil }
   let(:overrides) { {} }
-
-  def mock_no_envar(name) = allow(ENV).to receive(:key?).with(name).and_return(false)
-
-  def mock_envar(name, value)
-    allow(ENV).to receive(:key?).with(name).and_return(true)
-    allow(ENV).to receive(:fetch).with(name).and_return(value)
-  end
-
-  before do
-    allow(ENV).to receive(:key?).and_call_original
-    allow(ENV).to receive(:fetch).and_call_original
-
-    mock_no_envar("SLACK_LINE_SLACK_TOKEN")
-    mock_no_envar("SLACK_LINE_LOOK_UP_USERS")
-    mock_no_envar("SLACK_LINE_BOT_NAME")
-    mock_no_envar("SLACK_LINE_DEFAULT_CHANNEL")
-    mock_no_envar("SLACK_LINE_PER_MESSAGE_DELAY")
-    mock_no_envar("SLACK_LINE_PER_THREAD_DELAY")
-  end
 
   context "when initialized with no arguments" do
     subject(:configuration) { described_class.new }
@@ -94,14 +82,14 @@ RSpec.describe SlackLine::Configuration do
   end
 
   context "when environment variables are set" do
-    before do
-      mock_envar("SLACK_LINE_SLACK_TOKEN", "env_token")
-      mock_envar("SLACK_LINE_LOOK_UP_USERS", "true")
-      mock_envar("SLACK_LINE_BOT_NAME", "EnvBot")
-      mock_envar("SLACK_LINE_DEFAULT_CHANNEL", "#env-channel")
-      mock_envar("SLACK_LINE_PER_MESSAGE_DELAY", "0.25")
-      mock_envar("SLACK_LINE_PER_THREAD_DELAY", "0.75")
-    end
+    with_env(
+      "SLACK_LINE_SLACK_TOKEN" => "env_token",
+      "SLACK_LINE_LOOK_UP_USERS" => "true",
+      "SLACK_LINE_BOT_NAME" => "EnvBot",
+      "SLACK_LINE_DEFAULT_CHANNEL" => "#env-channel",
+      "SLACK_LINE_PER_MESSAGE_DELAY" => "0.25",
+      "SLACK_LINE_PER_THREAD_DELAY" => "0.75"
+    )
 
     it "uses values from environment variables" do
       expect(configuration.slack_token).to eq("env_token")
