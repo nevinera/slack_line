@@ -3,45 +3,6 @@
 This is a ruby gem supporting easy construction, sending, editing, and
 threading of messages and threads.
 
-## Configuration
-
-The only required setup is an OAuth token - each of these options can
-be set via ENV or `SlackLine.configure`:
-
-* `slack_token` or `SLACK_LINE_SLACK_TOKEN` (required) - this
-  allows the library to send messages and make API requests.
-* `look_up_users` or `SLACK_LINE_LOOK_UP_USERS` (default false) - if
-  your workspace refuses to turn `@somebody` mentions into links or
-  notifications, you can set this and we'll parse them out, then use
-  the slack API to map them to user/group IDs.
-* `bot_name` or `SLACK_LINE_BOT_NAME` - what to call the bot that's
-  posting (in slack). The default is to use its default name.
-* `default_channel` or `SLACK_LINE_DEFAULT_CHANNEL` - a target name
-  (either a channel with the leading pound-sign, or a user's handle
-  with a leading at-sign). When not supplied, all `send` calls are
-  required to specify a target instead.
-* `per_message_delay` or `SLACK_LINE_PER_MESSAGE_DELAY` is a float,
-  defaulting to 0.0. SlackLine will `sleep` for that duration after
-  each message is posted, to allow you to avoid hitting rate-limits
-  from posting many messages in a row.
-* `per_thread_delay` or `SLACK_LINE_PER_THREAD_DELAY` is a float as
-  well - SlackLine will `sleep` for this duration after each _thread_
-  is posted, and after each non-thread message is posted.
-
-You can just set those via the environment variables, but you can also
-set them on the singleton configuration object:
-
-```ruby
-SlackLine.configure do |config|
-  config.slack_token = ENV["SLACK_TOKEN"]
-  config.look_up_users = true
-  config.bot_name = "CI Bot"
-  config.default_channel = "#ci-flow"
-  config.per_message_delay = 0.2
-  config.per_thread_delay = 2.0
-end
-```
-
 ## Usage
 
 Are you ready? Because this is going to be _so easy_.
@@ -92,6 +53,45 @@ sent_message.update "Edit: never mind, false alarm"
 sent_thread.first.update "Problem Resolved!"
 sent_thread.detect { |m| m =~ /Not yet safe/ }&.update do
   text "it's safe now"
+end
+```
+
+## Configuration
+
+The only required setup is an OAuth token - each of these options can
+be set via ENV or `SlackLine.configure`:
+
+* `slack_token` or `SLACK_LINE_SLACK_TOKEN` (required) - this
+  allows the library to send messages and make API requests.
+* `look_up_users` or `SLACK_LINE_LOOK_UP_USERS` (default false) - if
+  your workspace refuses to turn `@somebody` mentions into links or
+  notifications, you can set this and we'll parse them out, then use
+  the slack API to map them to user/group IDs.
+* `bot_name` or `SLACK_LINE_BOT_NAME` - what to call the bot that's
+  posting (in slack). The default is to use its default name.
+* `default_channel` or `SLACK_LINE_DEFAULT_CHANNEL` - a target name
+  (either a channel with the leading pound-sign, or a user's handle
+  with a leading at-sign). When not supplied, all `send` calls are
+  required to specify a target instead.
+* `per_message_delay` or `SLACK_LINE_PER_MESSAGE_DELAY` is a float,
+  defaulting to 0.0. SlackLine will `sleep` for that duration after
+  each message is posted, to allow you to avoid hitting rate-limits
+  from posting many messages in a row.
+* `per_thread_delay` or `SLACK_LINE_PER_THREAD_DELAY` is a float as
+  well - SlackLine will `sleep` for this duration after each _thread_
+  is posted, and after each non-thread message is posted.
+
+You can just set those via the environment variables, but you can also
+set them on the singleton configuration object:
+
+```ruby
+SlackLine.configure do |config|
+  config.slack_token = ENV["SLACK_TOKEN"]
+  config.look_up_users = true
+  config.bot_name = "CI Bot"
+  config.default_channel = "#ci-flow"
+  config.per_message_delay = 0.2
+  config.per_thread_delay = 2.0
 end
 ```
 
