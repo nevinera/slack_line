@@ -5,11 +5,7 @@ module SlackLine
       @dsl_block = dsl_block
       @client = client
 
-      raise(ArgumentError, "Provide either text/blocks or a DSL block, not both.") if @dsl_block && @text_or_blocks
-      raise(ArgumentError, "Provide either text/blocks or a DSL block.") unless @dsl_block || @text_or_blocks
-      unless @text_or_blocks.nil? || @text_or_blocks.is_a?(String) || @text_or_blocks.is_a?(Slack::BlockKit::Blocks)
-        raise(ArgumentError, "Invalid content type: #{@text_or_blocks.class}")
-      end
+      validate!
     end
 
     def content
@@ -23,6 +19,24 @@ module SlackLine
         else
           raise ArgumentError, "Invalid content type: #{@text_or_blocks.class}"
         end
+    end
+
+    private
+
+    def validate!
+      validate_xor!
+      validate_type!
+    end
+
+    def validate_xor!
+      raise(ArgumentError, "Provide either text/blocks or a DSL block, not both.") if @dsl_block && @text_or_blocks
+      raise(ArgumentError, "Provide either text/blocks or a DSL block.") unless @dsl_block || @text_or_blocks
+    end
+
+    def validate_type!
+      unless @text_or_blocks.nil? || @text_or_blocks.is_a?(String) || @text_or_blocks.is_a?(Slack::BlockKit::Blocks)
+        raise(ArgumentError, "Invalid content type: #{@text_or_blocks.class}")
+      end
     end
   end
 end
