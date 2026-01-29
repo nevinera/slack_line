@@ -1,5 +1,6 @@
 require "forwardable"
 require "slack-ruby-block-kit"
+require "slack-ruby-client"
 require "json"
 require "cgi"
 
