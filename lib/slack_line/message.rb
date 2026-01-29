@@ -16,8 +16,6 @@ module SlackLine
           Slack::BlockKit.blocks { |b| b.section { |s| s.mrkdwn(text: @text_or_blocks) } }
         elsif @text_or_blocks.is_a?(Slack::BlockKit::Blocks)
           @text_or_blocks
-        else
-          raise ArgumentError, "Invalid content type: #{@text_or_blocks.class}"
         end
     end
 
