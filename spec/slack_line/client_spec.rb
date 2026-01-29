@@ -29,14 +29,14 @@ RSpec.describe SlackLine::Client do
     it { is_expected.to be_nil }
   end
 
-  describe "#send_message" do
-    subject(:send_message) { client.send_message }
+  describe "#post_message" do
+    subject(:post_message) { client.post_message }
 
     it { is_expected.to be_nil }
   end
 
-  describe "#send_thread" do
-    subject(:send_thread) { client.send_thread }
+  describe "#post_thread" do
+    subject(:post_thread) { client.post_thread }
 
     it { is_expected.to be_nil }
   end
