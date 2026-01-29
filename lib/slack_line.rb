@@ -22,7 +22,7 @@ module SlackLine
   class << self
     extend Forwardable
 
-    def_delegators(:client, :message, :thread, :send_message, :send_thread)
+    def_delegators(:client, :message, :thread, :post_message, :post_thread)
   end
 end
 

@@ -47,8 +47,8 @@ RSpec.describe SlackLine do
         SlackLine::Client,
         message: nil,
         thread: nil,
-        send_message: nil,
-        send_thread: nil
+        post_message: nil,
+        post_thread: nil
       )
     end
 
@@ -61,11 +61,11 @@ RSpec.describe SlackLine do
       SlackLine.thread("Thread start")
       expect(mock_client).to have_received(:thread).with("Thread start")
 
-      SlackLine.send_message("Channel1", "Hello Channel")
-      expect(mock_client).to have_received(:send_message).with("Channel1", "Hello Channel")
+      SlackLine.post_message("Channel1", "Hello Channel")
+      expect(mock_client).to have_received(:post_message).with("Channel1", "Hello Channel")
 
-      SlackLine.send_thread("Thread1", "Reply in thread")
-      expect(mock_client).to have_received(:send_thread).with("Thread1", "Reply in thread")
+      SlackLine.post_thread("Thread1", "Reply in thread")
+      expect(mock_client).to have_received(:post_thread).with("Thread1", "Reply in thread")
     end
   end
 end
