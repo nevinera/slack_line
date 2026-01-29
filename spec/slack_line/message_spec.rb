@@ -46,4 +46,13 @@ RSpec.describe SlackLine::Message do
       type: "section"
     }])
   end
+
+  describe "#builder_url" do
+    let(:message) { described_class.new("Test message", client:) }
+    subject(:builder_url) { message.builder_url }
+
+    it { is_expected.to be_a(String) }
+    it { is_expected.to start_with("https://app.slack.com/block-kit-builder#") }
+    it { is_expected.to end_with(CGI.escape({blocks: message.content.as_json}.to_json)) }
+  end
 end

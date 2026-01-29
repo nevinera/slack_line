@@ -1,6 +1,7 @@
 require "forwardable"
 require "slack-ruby-block-kit"
 require "json"
+require "cgi"
 
 module SlackLine
   Error = Class.new(StandardError)

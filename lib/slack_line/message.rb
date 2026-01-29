@@ -19,6 +19,15 @@ module SlackLine
         end
     end
 
+    # easier prototyping/verification. You can definitely construct illegal messages
+    # using the library in various ways, but if Slack's BlockKit Builder accepts it,
+    # it's probably right.
+    def builder_url
+      blocks_json = {blocks: content.as_json}.to_json
+      escaped_json = CGI.escape(blocks_json)
+      "https://app.slack.com/block-kit-builder##{escaped_json}"
+    end
+
     private
 
     def validate!

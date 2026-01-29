@@ -71,4 +71,14 @@ RSpec.describe SlackLine::Thread do
     expect(thread.messages[2]).to be(prebuilt_message)
     expect(thread.messages[2].content.as_json).to eq([{text: {text: "Prebuilt message", type: "mrkdwn"}, type: "section"}])
   end
+
+  describe "#builder_urls" do
+    let(:thread) { described_class.new("First message", "Second message", client:) }
+    subject(:builder_urls) { thread.builder_urls }
+
+    it { is_expected.to be_a(Array) }
+    it { is_expected.to have_attributes(size: 2) }
+    it { is_expected.to all(be_a(String)) }
+    it { is_expected.to all(start_with("https://app.slack.com/block-kit-builder#")) }
+  end
 end

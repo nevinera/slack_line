@@ -18,6 +18,8 @@ module SlackLine
 
     def_delegators :messages, :each, :[], :length, :size, :empty?
 
+    def builder_urls = messages.map(&:builder_url)
+
     private
 
     attr_reader :client
