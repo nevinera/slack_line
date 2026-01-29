@@ -12,8 +12,8 @@ module SlackLine
 
     def thread(*_args, **_kwargs) = nil
 
-    def send_message(*_args, **_kwargs) = nil
+    def post_message(*_args, **_kwargs) = nil
 
-    def send_thread(*_args, **_kwargs) = nil
+    def post_thread(*_args, **_kwargs) = nil
   end
 end
