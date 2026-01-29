@@ -35,7 +35,7 @@ module SlackLine
     def validate_types!
       @supplied_messages.each do |sm|
         unless sm.is_a?(String) || sm.is_a?(Slack::BlockKit::Blocks) || sm.is_a?(Message)
-          raise(ArgumentError, "Invalid message type: #{sm.class}")
+          raise(ArgumentError, "Invalid message type: #{sm.class}. Excepted a String, Slack::BlockKit::Blocks, or SlackLine::Message.")
         end
       end
     end
@@ -53,8 +53,6 @@ module SlackLine
         Message.new(sm, client:)
       elsif sm.is_a?(Message)
         sm
-      else
-        raise(ArgumentError, "Invalid message type: #{sm.class}. Excepted a String, Slack::BlockKit::Blocks, or SlackLine::Message.")
       end
     end
   end
