@@ -1,4 +1,6 @@
 require "forwardable"
+require "slack-ruby-block-kit"
+require "json"
 
 module SlackLine
   Error = Class.new(StandardError)
@@ -24,5 +26,5 @@ module SlackLine
   end
 end
 
-require_relative "slack_line/configuration"
-require_relative "slack_line/client"
+glob = File.expand_path("../slack_line/*.rb", __FILE__)
+Dir.glob(glob).sort.each { |f| require(f) }

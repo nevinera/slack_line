@@ -42,4 +42,6 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "standard", ">= 1.35.1"
   spec.add_development_dependency "rubocop", ">= 1.62"
   spec.add_development_dependency "mdl", "~> 0.12"
+
+  spec.add_dependency "slack-ruby-block-kit", "~> 0.23.0"
 end
