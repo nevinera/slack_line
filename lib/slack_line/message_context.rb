@@ -3,7 +3,7 @@ module SlackLine
     def initialize(&block)
       @content = ::Slack::BlockKit.blocks do |b|
         @in_progress_blocks = b
-        instance_eval(&block)
+        instance_exec(&block)
       ensure
         @in_progress_blocks = nil
       end

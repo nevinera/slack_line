@@ -3,7 +3,7 @@ module SlackLine
     def initialize(parent_context, &block)
       @content = parent_context.section do |s|
         @in_progress_section = s
-        instance_eval(&block)
+        instance_exec(&block)
       ensure
         @in_progress_section = nil
       end

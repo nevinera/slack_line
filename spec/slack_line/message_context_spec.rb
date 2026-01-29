@@ -29,6 +29,12 @@ RSpec.describe SlackLine::MessageContext do
       ])
     end
 
+    it "has access to the containing scope" do
+      my_text = "externally defined"
+      expect(described_class.new { text my_text }.content.as_json)
+        .to eq([{type: "section", text: {type: "mrkdwn", text: "externally defined"}}])
+    end
+
     it "handles a mrkdwn text call properly" do
       expect(described_class.new { text "Hello _world_" }.content.as_json)
         .to eq([{type: "section", text: {type: "mrkdwn", text: "Hello _world_"}}])

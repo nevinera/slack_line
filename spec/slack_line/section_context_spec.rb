@@ -27,26 +27,36 @@ RSpec.describe SlackLine::SectionContext do
       }])
     end
 
-    it "handles plain text properly" do
-      expect(described_class.new(@parent_context) { text "Plain text here", plain: true }.content.as_json)
-        .to eq([{type: "section", text: {type: "plain_text", text: "Plain text here"}}])
+    it "has access to the containing scope" do
+      my_text = "externally defined in section"
+      expect(described_class.new(@parent_context) { text my_text }.content.as_json)
+        .to eq([{type: "section", text: {type: "mrkdwn", text: "externally defined in section"}}])
     end
 
-    it "handles mrkdwn text properly" do
-      expect(described_class.new(@parent_context) { text "Markdown _text_" }.content.as_json)
-        .to eq([{type: "section", text: {type: "mrkdwn", text: "Markdown _text_"}}])
+    describe "#text" do
+      it "handles plain text properly" do
+        expect(described_class.new(@parent_context) { text "Plain text here", plain: true }.content.as_json)
+          .to eq([{type: "section", text: {type: "plain_text", text: "Plain text here"}}])
+      end
+
+      it "handles mrkdwn text properly" do
+        expect(described_class.new(@parent_context) { text "Markdown _text_" }.content.as_json)
+          .to eq([{type: "section", text: {type: "mrkdwn", text: "Markdown _text_"}}])
+      end
     end
 
-    it "handles a link properly" do
-      expect(described_class.new(@parent_context) { link "Go", "https://example.com" }.content.as_json).to eq([{
-        type: "section",
-        accessory: {
-          type: "button",
-          text: {type: "plain_text", text: "Go"},
-          action_id: "link-button",
-          url: "https://example.com"
-        }
-      }])
+    describe "#link" do
+      it "handles a link properly" do
+        expect(described_class.new(@parent_context) { link "Go", "https://example.com" }.content.as_json).to eq([{
+          type: "section",
+          accessory: {
+            type: "button",
+            text: {type: "plain_text", text: "Go"},
+            action_id: "link-button",
+            url: "https://example.com"
+          }
+        }])
+      end
     end
   end
 end
