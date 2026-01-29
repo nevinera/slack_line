@@ -28,6 +28,14 @@ RSpec.describe SlackLine::Client do
       expect(message.content.as_json)
         .to eq([{text: {text: "Hello", type: "mrkdwn"}, type: "section"}])
     end
+
+    it "supports multiple string arguments" do
+      multi_message = client.message("Hello", "World")
+      expect(multi_message.content.as_json).to eq([
+        {text: {text: "Hello", type: "mrkdwn"}, type: "section"},
+        {text: {text: "World", type: "mrkdwn"}, type: "section"}
+      ])
+    end
   end
 
   describe "#thread" do

@@ -1,6 +1,6 @@
 module SlackLine
   class Message
-    def initialize(text_or_blocks, client:, &dsl_block)
+    def initialize(*text_or_blocks, client:, &dsl_block)
       @text_or_blocks = text_or_blocks
       @dsl_block = dsl_block
       @client = client
@@ -12,10 +12,10 @@ module SlackLine
       @_content ||=
         if @dsl_block
           MessageContext.new(&@dsl_block).content
-        elsif @text_or_blocks.is_a?(String)
-          Slack::BlockKit.blocks { |b| b.section { |s| s.mrkdwn(text: @text_or_blocks) } }
-        elsif @text_or_blocks.is_a?(Slack::BlockKit::Blocks)
-          @text_or_blocks
+        elsif strings?(@text_or_blocks)
+          convert_multistring(*@text_or_blocks)
+        elsif blocks?(@text_or_blocks)
+          @text_or_blocks.first
         end
     end
 
@@ -36,13 +36,25 @@ module SlackLine
     end
 
     def validate_xor!
-      raise(ArgumentError, "Provide either text/blocks or a DSL block, not both.") if @dsl_block && @text_or_blocks
-      raise(ArgumentError, "Provide either text/blocks or a DSL block.") unless @dsl_block || @text_or_blocks
+      raise(ArgumentError, "Provide either strings/Slack::BlockKit::Blocks, or a DSL block, not both.") if @dsl_block && @text_or_blocks.any?
+      raise(ArgumentError, "Provide either strings/Slack::BlockKit::Blocks, or a DSL block.") unless @dsl_block || @text_or_blocks.any?
     end
 
     def validate_type!
-      unless @text_or_blocks.nil? || @text_or_blocks.is_a?(String) || @text_or_blocks.is_a?(Slack::BlockKit::Blocks)
+      unless @text_or_blocks.empty? || blocks?(@text_or_blocks) || strings?(@text_or_blocks)
         raise(ArgumentError, "Invalid content type: #{@text_or_blocks.class}")
+      end
+    end
+
+    def blocks?(obj) = obj.is_a?(Array) && obj.size == 1 && obj.first.is_a?(Slack::BlockKit::Blocks)
+
+    def strings?(obj) = obj.is_a?(Array) && obj.size > 0 && obj.all? { |item| item.is_a?(String) }
+
+    def convert_multistring(*strs)
+      Slack::BlockKit.blocks do |b|
+        strs.each do |str|
+          b.section { |s| s.mrkdwn(text: str) }
+        end
       end
     end
   end

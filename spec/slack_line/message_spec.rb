@@ -17,7 +17,7 @@ RSpec.describe SlackLine::Message do
   end
 
   it "creates content from a DSL block when provided" do
-    message = described_class.new(nil, client:) { text "Hello from DSL" }
+    message = described_class.new(client:) { text "Hello from DSL" }
     expect(message).to be_a(SlackLine::Message)
     expect(message.content).to be_a(Slack::BlockKit::Blocks)
     expect(message.content.as_json).to eq([{
@@ -36,6 +36,16 @@ RSpec.describe SlackLine::Message do
     }])
   end
 
+  it "creates content from multiple text strings when provided" do
+    message = described_class.new("Hello,", "world!", client:)
+    expect(message).to be_a(SlackLine::Message)
+    expect(message.content).to be_a(Slack::BlockKit::Blocks)
+    expect(message.content.as_json).to eq([
+      {text: {text: "Hello,", type: "mrkdwn"}, type: "section"},
+      {text: {text: "world!", type: "mrkdwn"}, type: "section"}
+    ])
+  end
+
   it "creates content from Slack::BlockKit::Blocks when provided" do
     blocks = Slack::BlockKit.blocks { |b| b.section { |s| s.mrkdwn(text: "Predefined block") } }
     message = described_class.new(blocks, client:)
@@ -45,6 +55,13 @@ RSpec.describe SlackLine::Message do
       text: {text: "Predefined block", type: "mrkdwn"},
       type: "section"
     }])
+  end
+
+  it "rejects multiple Slack::BlockKit::Blocks as content" do
+    blocks1 = Slack::BlockKit.blocks { |b| b.section { |s| s.mrkdwn(text: "Block 1") } }
+    blocks2 = Slack::BlockKit.blocks { |b| b.section { |s| s.mrkdwn(text: "Block 2") } }
+    expect { described_class.new(blocks1, blocks2, client:) }
+      .to raise_error(ArgumentError, /Invalid content type/)
   end
 
   describe "#builder_url" do
