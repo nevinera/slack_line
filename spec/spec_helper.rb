@@ -18,15 +18,16 @@ if ENV["SIMPLECOV"]
       if problem_files.any?
         header = "#{name}: coverage missing\n"
         rows = problem_files.map { |f| "    #{f.filename} (#{f.covered_percent.round(2)}%)\n" }
-        ([header] + rows).join
+        "\e[31m" + ([header] + rows).join + "\e[0m"
       else
         "#{name}: fully covered\n"
       end
     end
   end
 
+  SimpleCov.formatters = ProblemsFormatter, SimpleCov::Formatter::HTMLFormatter
+
   SimpleCov.start do
-    formatter(ProblemsFormatter) unless ENV["SIMPLECOV_HTML"]
     minimum_coverage line: 100
     add_group "lib", "lib/"
     add_filter "spec/"
