@@ -1,5 +1,7 @@
 module SlackLine
   class Message
+    include Memoization
+
     def initialize(*text_or_blocks, client:, &dsl_block)
       @text_or_blocks = text_or_blocks
       @dsl_block = dsl_block
@@ -8,21 +10,20 @@ module SlackLine
       validate!
     end
 
-    def content
-      @_content ||=
-        if @dsl_block
-          MessageContext.new(&@dsl_block).content
-        elsif strings?(@text_or_blocks)
-          convert_multistring(*@text_or_blocks)
-        elsif blocks?(@text_or_blocks)
-          @text_or_blocks.first
-        end
+    memoize def content
+      if @dsl_block
+        MessageContext.new(&@dsl_block).content
+      elsif strings?(@text_or_blocks)
+        convert_multistring(*@text_or_blocks)
+      elsif blocks?(@text_or_blocks)
+        @text_or_blocks.first
+      end
     end
 
     # easier prototyping/verification. You can definitely construct illegal messages
     # using the library in various ways, but if Slack's BlockKit Builder accepts it,
     # it's probably right.
-    def builder_url
+    memoize def builder_url
       blocks_json = {blocks: content.as_json}.to_json
       escaped_json = CGI.escape(blocks_json)
       "https://app.slack.com/block-kit-builder##{escaped_json}"

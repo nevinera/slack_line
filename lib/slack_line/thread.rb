@@ -2,6 +2,7 @@ module SlackLine
   class Thread
     extend Forwardable
     include Enumerable
+    include Memoization
 
     def initialize(*supplied_messages, client:, &dsl_block)
       @supplied_messages = supplied_messages
@@ -12,13 +13,11 @@ module SlackLine
     end
 
     # an Array of SlackLine::Messages
-    def messages
-      @_messages ||= message_contents.map { |mc| convert_supplied_message(mc) }
-    end
+    memoize def messages = message_contents.map { |mc| convert_supplied_message(mc) }
 
     def_delegators :messages, :each, :[], :length, :size, :empty?
 
-    def builder_urls = messages.map(&:builder_url)
+    memoize def builder_urls = messages.map(&:builder_url)
 
     private
 
@@ -42,13 +41,11 @@ module SlackLine
       end
     end
 
-    def dsl_contents = ThreadContext.new(&@dsl_block).contents
+    memoize def dsl_contents = ThreadContext.new(&@dsl_block).contents
 
     # produces an Array of (mixed) Strings, Slack::BlockKit::Blocks, and SlackLine::Messages
     # (ThreadContext will produce Strings and Blocks)
-    def message_contents
-      @_message_contents ||= @dsl_block ? dsl_contents : @supplied_messages
-    end
+    memoize def message_contents = @dsl_block ? dsl_contents : @supplied_messages
 
     def convert_supplied_message(sm)
       if sm.is_a?(String) || sm.is_a?(Slack::BlockKit::Blocks)
