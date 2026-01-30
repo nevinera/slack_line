@@ -3,25 +3,22 @@ require "slack-ruby-block-kit"
 require "json"
 require "cgi"
 
+require_relative "slack_line/memoization"
+
 module SlackLine
   Error = Class.new(StandardError)
 
-  def self.configure
-    yield(configuration)
-  end
-
-  # The Singleton configuration object - used by the Singleton client,
-  # and as config defaults for other clients.
-  def self.configuration
-    @configuration ||= Configuration.new
-  end
-
-  def self.client
-    @client ||= Client.new(configuration)
-  end
-
   class << self
     extend Forwardable
+    include Memoization
+
+    # The Singleton configuration object - used by the Singleton client,
+    # and as config defaults for other clients.
+    memoize def configuration = Configuration.new
+
+    def configure = yield(configuration)
+
+    memoize def client = Client.new(configuration)
 
     def_delegators(:client, :message, :thread, :post_message, :post_thread)
   end
