@@ -8,6 +8,8 @@ require_relative "slack_line/memoization"
 
 module SlackLine
   Error = Class.new(StandardError)
+  ConfigurationError = Class.new(Error)
+  PostMessageError = Class.new(Error)
 
   class << self
     extend Forwardable
