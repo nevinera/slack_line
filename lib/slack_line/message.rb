@@ -33,7 +33,7 @@ module SlackLine
     def post(to: nil, thread_ts: nil)
       target = to || configuration.default_channel || raise(ConfigurationError, "No target channel specified and no default_channel configured.")
       response = slack_client.chat_postMessage(channel: target, blocks: content_data, thread_ts:)
-      SentMessage.new(original_content: content_data, response:)
+      SentMessage.new(content: content_data, response:, client:)
     end
 
     private

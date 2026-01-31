@@ -100,7 +100,7 @@ RSpec.describe SlackLine::Message do
         sent_message = post
         expect(sent_message).to be_a(SlackLine::SentMessage)
         expect(sent_message).to have_attributes(
-          original_content: message.content.as_json,
+          content: message.content.as_json,
           response: response,
           ts: "1234567890.123456",
           channel: "C12345678"
@@ -129,7 +129,7 @@ RSpec.describe SlackLine::Message do
         sent_message = post
         expect(sent_message).to be_a(SlackLine::SentMessage)
         expect(sent_message).to have_attributes(
-          original_content: message.content.as_json,
+          content: message.content.as_json,
           response: response,
           ts: "1234567890.123456",
           channel: "C12345678"
@@ -150,7 +150,7 @@ RSpec.describe SlackLine::Message do
         sent_message = post
         expect(sent_message).to be_a(SlackLine::SentMessage)
         expect(sent_message).to have_attributes(
-          original_content: message.content.as_json,
+          content: message.content.as_json,
           response: response,
           ts: "1234567890.123456",
           channel: "C12345678"
