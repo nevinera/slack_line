@@ -9,7 +9,7 @@ Are you ready? Because this is going to be _so easy_.
 
 ```ruby
 # Send a simple message directly
-sent_message = SlackLine.post_message("Something happened!", to: "#general")
+sent_message = SlackLine.message("Something happened!", to: "#general").post
 
 # Construct a more complex message, then send it
 msg = SlackLine.message do
@@ -25,10 +25,10 @@ end
 sent_message = msg.post(to: "#general")
 
 # Send a _thread_ of messages (strings generate simple messages)
-sent_thread = SlackLine.post_thread("First text", "Second text", msg, to: "#general")
+sent_thread = SlackLine.thread("First text", "Second text", msg, to: "#general").post
 
 # You can also build them inline via dsl
-sent_thread = SlackLine.post_thread(to: "@dm_recipient") do
+sent_thread = SlackLine.thread(to: "@dm_recipient") do
   message do
     context "yeah"
     text "That's right"
@@ -36,7 +36,7 @@ sent_thread = SlackLine.post_thread(to: "@dm_recipient") do
 
   message(already_built_message)
   message "this makes a basic message directly"
-end
+end.post
 ```
 
 And then once you've sent a message or thread, you'll have a SentMessage
@@ -110,14 +110,14 @@ Slackline.configure do |config|
   config.bot_name = "FooBot"
 end
 
-# Now SlackLine.post_message (et al) will use SlackLine.client,
+# Now SlackLine.message (et al) will use SlackLine.client,
 # configured as above.
 
 BAR_SLACK = SlackLine::Client.new(default_channel: "#team-bar", bot_name: "BarBot")
 
-# And now you can call all of those methods on `BAR_SLACK` to use a
-# different default channel and name
+# And now you can call those methods on `BAR_SLACK` to use a different
+# default channel and name
 
-BAR_SLACK.post_thread("Message 1", "Message 2")
-BAR_SLACK.post_message("Message 3", to: "#bar-team-3")
+BAR_SLACK.thread("Message 1", "Message 2").post
+BAR_SLACK.message("Message 3", to: "#bar-team-3").post
 ```

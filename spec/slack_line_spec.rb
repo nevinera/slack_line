@@ -42,15 +42,7 @@ RSpec.describe SlackLine do
   end
 
   describe "forwarded methods" do
-    let(:mock_client) do
-      instance_double(
-        SlackLine::Client,
-        message: nil,
-        thread: nil,
-        post_message: nil,
-        post_thread: nil
-      )
-    end
+    let(:mock_client) { instance_double(SlackLine::Client, message: nil, thread: nil) }
 
     before { allow(SlackLine).to receive(:client).and_return(mock_client) }
 
@@ -60,12 +52,6 @@ RSpec.describe SlackLine do
 
       SlackLine.thread("Thread start")
       expect(mock_client).to have_received(:thread).with("Thread start")
-
-      SlackLine.post_message("Channel1", "Hello Channel")
-      expect(mock_client).to have_received(:post_message).with("Channel1", "Hello Channel")
-
-      SlackLine.post_thread("Thread1", "Reply in thread")
-      expect(mock_client).to have_received(:post_thread).with("Thread1", "Reply in thread")
     end
   end
 end

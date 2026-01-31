@@ -1,5 +1,6 @@
 module SlackLine
   class Message
+    extend Forwardable
     include Memoization
 
     def initialize(*text_or_blocks, client:, &dsl_block)
@@ -24,12 +25,21 @@ module SlackLine
     # using the library in various ways, but if Slack's BlockKit Builder accepts it,
     # it's probably right.
     memoize def builder_url
-      blocks_json = {blocks: content.as_json}.to_json
+      blocks_json = {blocks: content_data}.to_json
       escaped_json = CGI.escape(blocks_json)
       "https://app.slack.com/block-kit-builder##{escaped_json}"
     end
 
+    def post(to: nil, thread_ts: nil)
+      target = to || configuration.default_channel || raise(ConfigurationError, "No target channel specified and no default_channel configured.")
+      response = slack_client.chat_postMessage(channel: target, blocks: content_data, thread_ts:)
+      SentMessage.new(original_content: content_data, response:)
+    end
+
     private
+
+    attr_reader :client
+    def_delegators :client, :slack_client, :configuration
 
     def validate!
       validate_xor!
@@ -58,5 +68,7 @@ module SlackLine
         end
       end
     end
+
+    memoize def content_data = content.as_json
   end
 end

@@ -1,5 +1,6 @@
 require "forwardable"
 require "slack-ruby-block-kit"
+require "slack-ruby-client"
 require "json"
 require "cgi"
 
@@ -7,6 +8,8 @@ require_relative "slack_line/memoization"
 
 module SlackLine
   Error = Class.new(StandardError)
+  ConfigurationError = Class.new(Error)
+  PostMessageError = Class.new(Error)
 
   class << self
     extend Forwardable
@@ -20,7 +23,7 @@ module SlackLine
 
     memoize def client = Client.new(configuration)
 
-    def_delegators(:client, :message, :thread, :post_message, :post_thread)
+    def_delegators(:client, :message, :thread)
   end
 end
 

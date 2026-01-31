@@ -44,4 +44,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency "mdl", "~> 0.12"
 
   spec.add_dependency "slack-ruby-block-kit", "~> 0.23.0"
+  spec.add_dependency "slack-ruby-client", "~> 3.1.0"
 end
