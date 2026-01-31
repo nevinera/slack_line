@@ -19,6 +19,16 @@ RSpec.describe SlackLine::Client do
     it { is_expected.to have_attributes(slack_token: "fake-slack-token") }
   end
 
+  describe "#slack_client" do
+    subject(:slack_client) { client.slack_client }
+
+    it { is_expected.to be_a(Slack::Web::Client) }
+
+    it "is memoized" do
+      expect(client.slack_client).to be(slack_client)
+    end
+  end
+
   describe "#message" do
     subject(:message) { client.message("Hello") }
 
