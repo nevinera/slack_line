@@ -20,12 +20,11 @@ module SlackLine
     memoize def builder_urls = messages.map(&:builder_url)
 
     def post(to: nil)
-      target = to || client.configuration.default_channel || raise(ConfigurationError, "No target channel specified and no default_channel configured.")
       sent_messages = []
       thread_ts = nil
 
       messages.each do |message|
-        sent = message.post(to: target, thread_ts:)
+        sent = message.post(to:, thread_ts:)
         thread_ts ||= sent.ts
         sent_messages << sent
       end

@@ -30,11 +30,7 @@ module SlackLine
       "https://app.slack.com/block-kit-builder##{escaped_json}"
     end
 
-    def post(to: nil, thread_ts: nil)
-      target = to || configuration.default_channel || raise(ConfigurationError, "No target channel specified and no default_channel configured.")
-      response = slack_client.chat_postMessage(channel: target, blocks: content_data, thread_ts:, username: configuration.bot_name)
-      SentMessage.new(content: content_data, response:, client:)
-    end
+    def post(to: nil, thread_ts: nil) = MessageSender.new(message: self, client:, to:, thread_ts:).post
 
     private
 
