@@ -1,5 +1,5 @@
 RSpec.describe SlackLine::Thread do
-  let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default") }
+  let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default", bot_name: "TestBot") }
   let(:slack_client) { instance_double(Slack::Web::Client) }
   let(:client) { instance_double(SlackLine::Client, configuration:, slack_client:) }
 
@@ -105,11 +105,11 @@ RSpec.describe SlackLine::Thread do
       it "makes the expected message posts to Slack" do
         post
         expect(slack_client).to have_received(:chat_postMessage)
-          .with(channel: target_channel, blocks: message_one.content.as_json, thread_ts: nil).ordered
+          .with(channel: target_channel, blocks: message_one.content.as_json, thread_ts: nil, username: "TestBot").ordered
         expect(slack_client).to have_received(:chat_postMessage)
-          .with(channel: target_channel, blocks: message_two.content.as_json, thread_ts: "111.111").ordered
+          .with(channel: target_channel, blocks: message_two.content.as_json, thread_ts: "111.111", username: "TestBot").ordered
         expect(slack_client).to have_received(:chat_postMessage)
-          .with(channel: target_channel, blocks: message_tre.content.as_json, thread_ts: "111.111").ordered
+          .with(channel: target_channel, blocks: message_tre.content.as_json, thread_ts: "111.111", username: "TestBot").ordered
       end
 
       it "produces the expected SentThread" do
@@ -130,7 +130,7 @@ RSpec.describe SlackLine::Thread do
       it "uses the default channel from configuration" do
         post
         expect(slack_client).to have_received(:chat_postMessage)
-          .with(channel: configuration.default_channel, blocks: anything, thread_ts: anything)
+          .with(channel: configuration.default_channel, blocks: anything, thread_ts: anything, username: "TestBot")
           .exactly(3).times
       end
 

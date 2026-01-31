@@ -1,5 +1,5 @@
 RSpec.describe SlackLine::Message do
-  let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default") }
+  let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default", bot_name: "TestBot") }
   let(:slack_client) { instance_double(Slack::Web::Client) }
   let(:client) { instance_double(SlackLine::Client, configuration:, slack_client:) }
 
@@ -93,7 +93,7 @@ RSpec.describe SlackLine::Message do
       it "performs the expected postMessage API call" do
         post
         expect(slack_client).to have_received(:chat_postMessage)
-          .with(channel: "#bot-default", blocks: message.content.as_json, thread_ts: nil)
+          .with(channel: "#bot-default", blocks: message.content.as_json, thread_ts: nil, username: "TestBot")
       end
 
       it "produces the expected SentMessage" do
@@ -122,7 +122,7 @@ RSpec.describe SlackLine::Message do
       it "performs the expected postMessage API call" do
         post
         expect(slack_client).to have_received(:chat_postMessage)
-          .with(channel: "#bot-testing", blocks: message.content.as_json, thread_ts: nil)
+          .with(channel: "#bot-testing", blocks: message.content.as_json, thread_ts: nil, username: "TestBot")
       end
 
       it "produces the expected SentMessage" do
@@ -143,7 +143,7 @@ RSpec.describe SlackLine::Message do
       it "includes the thread_ts in the postMessage API call" do
         post
         expect(slack_client).to have_received(:chat_postMessage)
-          .with(channel: target, blocks: message.content.as_json, thread_ts: "1234567890.123456")
+          .with(channel: target, blocks: message.content.as_json, thread_ts: "1234567890.123456", username: "TestBot")
       end
 
       it "produces the expected SentMessage" do
