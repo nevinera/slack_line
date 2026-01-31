@@ -12,8 +12,5 @@ module SlackLine
 
     def thread(*messages, &dsl_block) = Thread.new(*messages, client: self, &dsl_block)
 
-    def post_message(*_args, **_kwargs) = nil
-
-    def post_thread(*_args, **_kwargs) = nil
   end
 end

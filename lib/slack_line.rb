@@ -21,7 +21,7 @@ module SlackLine
 
     memoize def client = Client.new(configuration)
 
-    def_delegators(:client, :message, :thread, :post_message, :post_thread)
+    def_delegators(:client, :message, :thread)
   end
 end
 

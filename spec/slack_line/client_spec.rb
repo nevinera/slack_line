@@ -50,16 +50,4 @@ RSpec.describe SlackLine::Client do
       expect(thread.messages[1].content.as_json).to eq([{text: {text: "Hello", type: "mrkdwn"}, type: "section"}])
     end
   end
-
-  describe "#post_message" do
-    subject(:post_message) { client.post_message }
-
-    it { is_expected.to be_nil }
-  end
-
-  describe "#post_thread" do
-    subject(:post_thread) { client.post_thread }
-
-    it { is_expected.to be_nil }
-  end
 end
