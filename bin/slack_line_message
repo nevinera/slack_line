@@ -40,6 +40,10 @@ message =
     SlackLine::Message.new(client:) { eval(options[:dsl]) }
   end
 
-warn "Preview message at #{message.builder_url}\n\n"
-
-puts JSON.pretty_generate(message.content.as_json)
+if options[:post_to]
+  message.post(to: options[:post_to])
+  warn "Posted message to #{options[:post_to]}"
+else
+  warn "Preview message at #{message.builder_url}\n\n"
+  puts JSON.pretty_generate(message.content.as_json)
+end

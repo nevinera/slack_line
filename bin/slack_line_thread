@@ -40,11 +40,16 @@ thread =
     SlackLine::Thread.new(client:) { eval(options[:dsl]) }
   end
 
-warn "Preview messages at:"
-thread.builder_urls.each { |url| warn "  #{url}" }
+if options[:post_to]
+  thread.post_to(options[:post_to])
+  warn "Posted thread to #{options[:post_to]}"
+else
+  warn "Preview messages at:"
+  thread.builder_urls.each { |url| warn "  #{url}" }
 
-thread.each do |message|
-  puts "\n\n--------------------- Message ---------------------\n"
-  puts "Preview at: #{message.builder_url}\n\n"
-  puts JSON.pretty_generate(message.content.as_json)
+  thread.each do |message|
+    puts "\n\n--------------------- Message ---------------------\n"
+    puts "Preview at: #{message.builder_url}\n\n"
+    puts JSON.pretty_generate(message.content.as_json)
+  end
 end
