@@ -14,10 +14,19 @@ module SlackLine
 
     private
 
-    memoize def target
+    memoize def supplied_target
       to ||
         configuration.default_channel ||
         raise(ConfigurationError, "No target channel specified and no default_channel configured.")
+    end
+
+    memoize def target
+      if supplied_target.start_with?("@")
+        name = supplied_target[1..]
+        client.users.find(display_name: name).id
+      else
+        supplied_target
+      end
     end
 
     memoize def api_response

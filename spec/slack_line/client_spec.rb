@@ -60,4 +60,14 @@ RSpec.describe SlackLine::Client do
       expect(thread.messages[1].content.as_json).to eq([{text: {text: "Hello", type: "mrkdwn"}, type: "section"}])
     end
   end
+
+  describe "#users" do
+    subject(:users) { client.users }
+
+    it { is_expected.to be_a(SlackLine::Users) }
+
+    it "is memoized" do
+      expect(client.users).to be(users)
+    end
+  end
 end

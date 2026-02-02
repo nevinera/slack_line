@@ -7,7 +7,8 @@ RSpec.describe SlackLine::MessageSender do
   let(:response) { Slack::Messages::Message.new({ok: true, ts: "1234567890.123456", channel: "A1792321"}) }
   let(:slack_client) { instance_double(Slack::Web::Client, chat_postMessage: response) }
   let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default", bot_name: "MyBot") }
-  let(:client) { instance_double(SlackLine::Client, configuration:, slack_client:) }
+  let(:users) { instance_double(SlackLine::Users) }
+  let(:client) { instance_double(SlackLine::Client, configuration:, slack_client:, users:) }
 
   let(:to) { nil }
   let(:thread_ts) { nil }
@@ -41,6 +42,19 @@ RSpec.describe SlackLine::MessageSender do
       expect(sent_message).to be_a(SlackLine::SentMessage)
       expect(sent_message.content).to eq(content.as_json)
       expect(sent_message.response).to eq(response)
+    end
+
+    context "when 'to' is a username" do
+      let(:to) { "@alice" }
+      let(:alice) { Hashie::Mash.new(id: "U12345", profile: {display_name: "alice"}) }
+      let(:users) { instance_double(SlackLine::Users, find: alice) }
+
+      it "resolves the username to a user ID and sends the message" do
+        sent_message
+        expect(users).to have_received(:find).with(display_name: "alice")
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "U12345", blocks: content.as_json, thread_ts: nil, username: "MyBot")
+      end
     end
   end
 end
