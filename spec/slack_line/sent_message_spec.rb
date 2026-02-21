@@ -9,6 +9,22 @@ RSpec.describe SlackLine::SentMessage do
   it { is_expected.to have_attributes(content:, response:, priorly: nil) }
   it { is_expected.to have_attributes(ts: "1234567890.123456", channel: "C12345678") }
 
+  describe "#thread_ts" do
+    context "when the message is a root message (no thread_ts in response)" do
+      it "returns the message's own ts" do
+        expect(sent_message.thread_ts).to eq("1234567890.123456")
+      end
+    end
+
+    context "when the message is a reply (thread_ts present in response)" do
+      let(:response) { Slack::Messages::Message.new({ts: "1234567891.000001", channel: "C12345678", thread_ts: "1234567890.123456"}) }
+
+      it "returns the root message's thread_ts" do
+        expect(sent_message.thread_ts).to eq("1234567890.123456")
+      end
+    end
+  end
+
   context "when prior content is supplied" do
     let(:priorly) { [type: "section", text: {type: "mrkdwn", text: "Previous message"}] }
 
@@ -20,6 +36,75 @@ RSpec.describe SlackLine::SentMessage do
 
     it "includes class name, channel, and ts" do
       expect(inspect_output).to eq('#<SlackLine::SentMessage channel="C12345678" ts="1234567890.123456">')
+    end
+  end
+
+  describe "#thread_from" do
+    let(:configuration) { instance_double(SlackLine::Configuration, bot_name: "TestBot") }
+    let(:client) { instance_double(SlackLine::Client, slack_client:, configuration:) }
+    let(:new_response) { Slack::Messages::Message.new({ts: "9999999999.000001", channel: "C12345678"}) }
+
+    before { allow(slack_client).to receive(:chat_postMessage).and_return(new_response) }
+
+    context "when appending with a string" do
+      subject(:result) { sent_message.thread_from("Reply message") }
+
+      it "returns a SentThread starting with the original message" do
+        expect(result).to be_a(SlackLine::SentThread)
+        expect(result.first).to be(sent_message)
+      end
+
+      it "posts the reply with the correct thread_ts and channel" do
+        result
+        blocks = [{type: "section", text: {type: "mrkdwn", text: "Reply message"}}]
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "C12345678", blocks:, thread_ts: "1234567890.123456", username: "TestBot")
+      end
+
+      it "includes the new sent message in the returned thread" do
+        expect(result.size).to eq(2)
+        expect(result.last).to be_a(SlackLine::SentMessage)
+        expect(result.last.ts).to eq("9999999999.000001")
+      end
+    end
+
+    context "when appending with a DSL block" do
+      subject(:result) { sent_message.thread_from { text "DSL reply" } }
+
+      it "returns a SentThread with the original message and new reply" do
+        expect(result.size).to eq(2)
+        expect(result.first).to be(sent_message)
+      end
+
+      it "posts the reply with the correct thread_ts" do
+        result
+        blocks = [{type: "section", text: {type: "mrkdwn", text: "DSL reply"}}]
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "C12345678", blocks:, thread_ts: "1234567890.123456", username: "TestBot")
+      end
+    end
+
+    context "when appending with a Message object" do
+      let(:message) { SlackLine::Message.new("Message reply", client:) }
+      subject(:result) { sent_message.thread_from(message) }
+
+      it "posts the reply with the correct thread_ts and channel" do
+        result
+        blocks = [{type: "section", text: {type: "mrkdwn", text: "Message reply"}}]
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "C12345678", blocks:, thread_ts: "1234567890.123456", username: "TestBot")
+      end
+    end
+
+    context "when the message is itself a reply" do
+      let(:response) { Slack::Messages::Message.new({ts: "1234567891.000001", channel: "C12345678", thread_ts: "1234567890.123456"}) }
+      subject(:result) { sent_message.thread_from("Another reply") }
+
+      it "posts to the root thread_ts, not the reply's own ts" do
+        result
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "C12345678", blocks: anything, thread_ts: "1234567890.123456", username: "TestBot")
+      end
     end
   end
 
