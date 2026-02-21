@@ -12,6 +12,8 @@ module SlackLine
     attr_reader :content, :priorly, :response
     def_delegators :response, :ts, :channel
 
+    def thread_ts = response.thread_ts || ts
+
     def inspect = "#<#{self.class} channel=#{channel.inspect} ts=#{ts.inspect}>"
 
     def update(*text_or_blocks, &dsl_block)

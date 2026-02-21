@@ -9,6 +9,22 @@ RSpec.describe SlackLine::SentMessage do
   it { is_expected.to have_attributes(content:, response:, priorly: nil) }
   it { is_expected.to have_attributes(ts: "1234567890.123456", channel: "C12345678") }
 
+  describe "#thread_ts" do
+    context "when the message is a root message (no thread_ts in response)" do
+      it "returns the message's own ts" do
+        expect(sent_message.thread_ts).to eq("1234567890.123456")
+      end
+    end
+
+    context "when the message is a reply (thread_ts present in response)" do
+      let(:response) { Slack::Messages::Message.new({ts: "1234567891.000001", channel: "C12345678", thread_ts: "1234567890.123456"}) }
+
+      it "returns the root message's thread_ts" do
+        expect(sent_message.thread_ts).to eq("1234567890.123456")
+      end
+    end
+  end
+
   context "when prior content is supplied" do
     let(:priorly) { [type: "section", text: {type: "mrkdwn", text: "Previous message"}] }
 
