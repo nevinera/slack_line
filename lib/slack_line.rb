@@ -25,6 +25,14 @@ module SlackLine
     memoize def client = Client.new(configuration)
 
     def_delegators(:client, :message, :thread)
+
+    TYPES = {"message" => ->(data, client:) { SentMessage.from_json(data, client:) },
+             "thread" => ->(data, client:) { SentThread.from_json(data, client:) }}.freeze
+
+    def from_json(data, client:)
+      loader = TYPES[data["type"]] or raise(ArgumentError, "Unknown type #{data["type"].inspect}")
+      loader.call(data, client:)
+    end
   end
 end
 
