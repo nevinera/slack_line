@@ -19,5 +19,15 @@ module SlackLine
     end
 
     def inspect = "#<#{self.class} channel=#{channel.inspect} size=#{size} thread_ts=#{thread_ts.inspect}>"
+
+    def as_json
+      {"type" => "thread", "messages" => sent_messages.map(&:as_json)}
+    end
+
+    def self.from_json(data, client:)
+      raise ArgumentError, "Expected type 'thread', got #{data["type"].inspect}" unless data["type"] == "thread"
+
+      new(*data["messages"].map { |m| SentMessage.from_json(m, client:) })
+    end
   end
 end

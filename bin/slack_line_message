@@ -6,6 +6,8 @@ require "reline"
 
 options = {
   post_to: nil,
+  append: nil,
+  save: nil,
   content: nil,
   dsl: nil
 }
@@ -19,6 +21,8 @@ OptionParser.new do |opts|
   opts.on("-u", "--look-up-users", "Enable user look-up") { configuration.look_up_users = true }
   opts.on("-n", "--bot-name NAME", "Bot name to use") { |n| configuration.bot_name = n }
   opts.on("-p", "--post-to TARGET", "Channel or user post the message to") { |t| options[:post_to] = t }
+  opts.on("-a", "--append PATH", "Append to the thread of a persisted message or thread") { |p| options[:append] = p }
+  opts.on("-s", "--save PATH", "Save the result as JSON to PATH") { |p| options[:save] = p }
 end.parse!
 
 if ARGV.empty?
@@ -40,9 +44,19 @@ message =
     SlackLine::Message.new(client:) { eval(options[:dsl]) }
   end
 
-if options[:post_to]
-  message.post(to: options[:post_to])
+if options[:append]
+  loaded = SlackLine.from_json(JSON.parse(File.read(options[:append])), client:)
+  sent_thread =
+    case loaded
+    when SlackLine::SentMessage then loaded.thread_from(message)
+    when SlackLine::SentThread then loaded.append(message)
+    end
+  warn "Appended to thread in #{sent_thread.channel}"
+  File.write(options[:save], JSON.pretty_generate(sent_thread.as_json)) if options[:save]
+elsif options[:post_to]
+  sent = message.post(to: options[:post_to])
   warn "Posted message to #{options[:post_to]}"
+  File.write(options[:save], JSON.pretty_generate(sent.as_json)) if options[:save]
 else
   warn "Preview message at #{message.builder_url}\n\n"
   puts JSON.pretty_generate(message.content.as_json)

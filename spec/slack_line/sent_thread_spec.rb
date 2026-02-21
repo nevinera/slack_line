@@ -83,6 +83,110 @@ RSpec.describe SlackLine::SentThread do
     end
   end
 
+  describe "#as_json" do
+    let(:msg_one_json) { {"type" => "message", "ts" => "1234567890.123456", "channel" => "C12345678", "thread_ts" => nil, "content" => [], "priorly" => nil} }
+    let(:msg_two_json) { {"type" => "message", "ts" => "1234567891.654321", "channel" => "C12345678", "thread_ts" => "1234567890.123456", "content" => [], "priorly" => nil} }
+    let(:msg_tre_json) { {"type" => "message", "ts" => "1234567894.111111", "channel" => "C12345678", "thread_ts" => "1234567890.123456", "content" => [], "priorly" => nil} }
+
+    before do
+      allow(sent_message_one).to receive(:as_json).and_return(msg_one_json)
+      allow(sent_message_two).to receive(:as_json).and_return(msg_two_json)
+      allow(sent_message_tre).to receive(:as_json).and_return(msg_tre_json)
+    end
+
+    it "returns a hash with type 'thread' and serialized messages" do
+      expect(sent_thread.as_json).to eq(
+        "type" => "thread",
+        "messages" => [msg_one_json, msg_two_json, msg_tre_json]
+      )
+    end
+  end
+
+  describe ".from_json" do
+    let(:client) { instance_double(SlackLine::Client) }
+    let(:data) do
+      {
+        "type" => "thread",
+        "messages" => [
+          {"type" => "message", "ts" => "1234567890.123456", "channel" => "C12345678", "thread_ts" => nil, "content" => [], "priorly" => nil},
+          {"type" => "message", "ts" => "1234567891.654321", "channel" => "C12345678", "thread_ts" => "1234567890.123456", "content" => [], "priorly" => nil}
+        ]
+      }
+    end
+
+    subject(:loaded) { described_class.from_json(data, client:) }
+
+    it "returns a SentThread" do
+      expect(loaded).to be_a(described_class)
+    end
+
+    it "restores each message with the correct ts and channel" do
+      expect(loaded.size).to eq(2)
+      expect(loaded.first).to have_attributes(ts: "1234567890.123456", channel: "C12345678")
+      expect(loaded.last).to have_attributes(ts: "1234567891.654321", thread_ts: "1234567890.123456")
+    end
+  end
+
+  describe "#as_json" do
+    let(:msg_one_json) { {"type" => "message", "ts" => "1234567890.123456", "channel" => "C12345678", "thread_ts" => nil, "content" => [], "priorly" => nil} }
+    let(:msg_two_json) { {"type" => "message", "ts" => "1234567891.654321", "channel" => "C12345678", "thread_ts" => "1234567890.123456", "content" => [], "priorly" => nil} }
+    let(:msg_tre_json) { {"type" => "message", "ts" => "1234567894.111111", "channel" => "C12345678", "thread_ts" => "1234567890.123456", "content" => [], "priorly" => nil} }
+
+    before do
+      allow(sent_message_one).to receive(:as_json).and_return(msg_one_json)
+      allow(sent_message_two).to receive(:as_json).and_return(msg_two_json)
+      allow(sent_message_tre).to receive(:as_json).and_return(msg_tre_json)
+    end
+
+    it "returns a hash with type 'thread' and serialized messages" do
+      expect(sent_thread.as_json).to eq(
+        "type" => "thread",
+        "messages" => [msg_one_json, msg_two_json, msg_tre_json]
+      )
+    end
+  end
+
+  describe ".from_json" do
+    let(:client) { instance_double(SlackLine::Client) }
+    let(:data) do
+      {
+        "type" => "thread",
+        "messages" => [
+          {"type" => "message", "ts" => "1234567890.123456", "channel" => "C12345678", "thread_ts" => nil, "content" => [{"type" => "section"}], "priorly" => nil},
+          {"type" => "message", "ts" => "1234567891.654321", "channel" => "C12345678", "thread_ts" => "1234567890.123456", "content" => [{"type" => "section"}], "priorly" => nil}
+        ]
+      }
+    end
+
+    subject(:loaded) { described_class.from_json(data, client:) }
+
+    context "when the type key is wrong" do
+      subject(:loaded) { described_class.from_json({"type" => "message"}, client:) }
+
+      it "raises ArgumentError" do
+        expect { loaded }.to raise_error(ArgumentError, /Expected type 'thread'/)
+      end
+    end
+
+    context "when the type key is missing" do
+      subject(:loaded) { described_class.from_json({}, client:) }
+
+      it "raises ArgumentError" do
+        expect { loaded }.to raise_error(ArgumentError, /Expected type 'thread'/)
+      end
+    end
+
+    it "returns a SentThread with the correct number of messages" do
+      expect(loaded).to be_a(described_class)
+      expect(loaded.size).to eq(2)
+    end
+
+    it "restores channel and content on each message" do
+      expect(loaded.first).to have_attributes(ts: "1234567890.123456", channel: "C12345678", content: [{"type" => "section"}])
+      expect(loaded.last).to have_attributes(ts: "1234567891.654321", channel: "C12345678", thread_ts: "1234567890.123456")
+    end
+  end
+
   describe "#inspect" do
     subject(:inspect_output) { sent_thread.inspect }
 

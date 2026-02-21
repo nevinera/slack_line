@@ -16,6 +16,20 @@ module SlackLine
 
     def inspect = "#<#{self.class} channel=#{channel.inspect} ts=#{ts.inspect}>"
 
+    def as_json
+      {"type" => "message", "ts" => ts, "channel" => channel,
+       "thread_ts" => response.thread_ts, "content" => content, "priorly" => priorly}
+    end
+
+    def self.from_json(data, client:)
+      raise ArgumentError, "Expected type 'message', got #{data["type"].inspect}" unless data["type"] == "message"
+
+      response_hash = {ts: data["ts"], channel: data["channel"]}
+      response_hash[:thread_ts] = data["thread_ts"] if data["thread_ts"]
+      response = Slack::Messages::Message.new(response_hash)
+      new(response:, client:, content: data["content"], priorly: data["priorly"])
+    end
+
     def thread_from(*text_or_blocks, &dsl_block)
       appended = Thread.new(*text_or_blocks, client:, &dsl_block)
       new_sent = appended.messages.map { |m| m.post(to: channel, thread_ts:) }

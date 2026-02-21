@@ -41,6 +41,34 @@ RSpec.describe SlackLine do
     end
   end
 
+  describe ".from_json" do
+    let(:client) { instance_double(SlackLine::Client) }
+    let(:message_data) { {"type" => "message", "ts" => "1234567890.123456", "channel" => "C12345678", "thread_ts" => nil, "content" => [], "priorly" => nil} }
+    let(:thread_data) do
+      {"type" => "thread", "messages" => [
+        {"type" => "message", "ts" => "1234567890.123456", "channel" => "C12345678", "thread_ts" => nil, "content" => [], "priorly" => nil}
+      ]}
+    end
+
+    it "loads a SentMessage when type is 'message'" do
+      expect(described_class.from_json(message_data, client:)).to be_a(SlackLine::SentMessage)
+    end
+
+    it "loads a SentThread when type is 'thread'" do
+      expect(described_class.from_json(thread_data, client:)).to be_a(SlackLine::SentThread)
+    end
+
+    it "raises ArgumentError for an unknown type" do
+      expect { described_class.from_json({"type" => "bogus"}, client:) }
+        .to raise_error(ArgumentError, /Unknown type/)
+    end
+
+    it "raises ArgumentError when type is missing" do
+      expect { described_class.from_json({}, client:) }
+        .to raise_error(ArgumentError, /Unknown type/)
+    end
+  end
+
   describe "forwarded methods" do
     let(:mock_client) { instance_double(SlackLine::Client, message: nil, thread: nil) }
 
