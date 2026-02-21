@@ -6,6 +6,7 @@ require "reline"
 
 options = {
   post_to: nil,
+  save: nil,
   content: nil,
   dsl: nil
 }
@@ -19,6 +20,7 @@ OptionParser.new do |opts|
   opts.on("-u", "--look-up-users", "Enable user look-up") { configuration.look_up_users = true }
   opts.on("-n", "--bot-name NAME", "Bot name to use") { |n| configuration.bot_name = n }
   opts.on("-p", "--post-to TARGET", "Channel or user post the message to") { |t| options[:post_to] = t }
+  opts.on("-s", "--save PATH", "Save the posted thread as JSON to PATH") { |p| options[:save] = p }
 end.parse!
 
 if ARGV.empty?
@@ -41,8 +43,9 @@ thread =
   end
 
 if options[:post_to]
-  thread.post_to(options[:post_to])
+  sent = thread.post(to: options[:post_to])
   warn "Posted thread to #{options[:post_to]}"
+  File.write(options[:save], JSON.pretty_generate(sent.as_json)) if options[:save]
 else
   warn "Preview messages at:"
   thread.builder_urls.each { |url| warn "  #{url}" }
