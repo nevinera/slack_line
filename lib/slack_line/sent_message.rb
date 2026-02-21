@@ -16,6 +16,12 @@ module SlackLine
 
     def inspect = "#<#{self.class} channel=#{channel.inspect} ts=#{ts.inspect}>"
 
+    def thread_from(*text_or_blocks, &dsl_block)
+      appended = Thread.new(*text_or_blocks, client:, &dsl_block)
+      new_sent = appended.messages.map { |m| m.post(to: channel, thread_ts:) }
+      SentThread.new(self, *new_sent)
+    end
+
     def update(*text_or_blocks, &dsl_block)
       updated_message = Message.new(*text_or_blocks, client:, &dsl_block)
       new_content = updated_message.content.as_json
