@@ -8,6 +8,7 @@ options = {
   post_to: nil,
   append: nil,
   update: nil,
+  message_number: nil,
   save: nil,
   content: nil,
   dsl: nil
@@ -23,11 +24,13 @@ OptionParser.new do |opts|
   opts.on("-n", "--bot-name NAME", "Bot name to use") { |n| configuration.bot_name = n }
   opts.on("-p", "--post-to TARGET", "Channel or user post the message to") { |t| options[:post_to] = t }
   opts.on("-a", "--append PATH", "Append to the thread of a persisted message or thread") { |p| options[:append] = p }
-  opts.on("-U", "--update PATH", "Replace the content of a persisted message") { |p| options[:update] = p }
+  opts.on("-U", "--update PATH", "Replace the content of a persisted message or thread message") { |p| options[:update] = p }
+  opts.on("-m", "--message-number N", Integer, "Which message in a thread to update (1-based)") { |n| options[:message_number] = n }
   opts.on("-s", "--save PATH", "Save the result as JSON to PATH") { |p| options[:save] = p }
 end.parse!
 
 abort "--append and --update cannot be used together" if options[:append] && options[:update]
+abort "--message-number requires --update" if options[:message_number] && !options[:update]
 
 if ARGV.empty?
   warn "No content provided, reading (as dsl) from stdin. Control+D to finish:\n\n"
@@ -52,8 +55,19 @@ if options[:append]
   warn "Appended to thread in #{sent_thread.channel}"
   File.write(options[:save], JSON.pretty_generate(sent_thread.as_json)) if options[:save]
 elsif options[:update]
-  loaded = SlackLine::SentMessage.from_json(JSON.parse(File.read(options[:update])), client:)
-  sent = options[:content] ? loaded.update(*options[:content]) : loaded.update { eval(options[:dsl]) }
+  loaded = SlackLine.from_json(JSON.parse(File.read(options[:update])), client:)
+  sent =
+    case loaded
+    when SlackLine::SentMessage
+      abort "--message-number cannot be used when updating a single message" if options[:message_number]
+      options[:content] ? loaded.update(*options[:content]) : loaded.update { eval(options[:dsl]) }
+    when SlackLine::SentThread
+      abort "--message-number is required when updating a thread" unless options[:message_number]
+      idx = options[:message_number] - 1
+      abort "--message-number #{options[:message_number]} is out of range (thread has #{loaded.size} messages)" unless (0...loaded.size).cover?(idx)
+      updated = options[:content] ? loaded.sent_messages[idx].update(*options[:content]) : loaded.sent_messages[idx].update { eval(options[:dsl]) }
+      SlackLine::SentThread.new(*loaded.sent_messages[0...idx], updated, *loaded.sent_messages[(idx + 1)..])
+    end
   warn "Updated message in #{sent.channel}"
   File.write(options[:save], JSON.pretty_generate(sent.as_json)) if options[:save]
 elsif options[:post_to]
