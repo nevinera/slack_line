@@ -108,6 +108,99 @@ RSpec.describe SlackLine::SentMessage do
     end
   end
 
+  describe "#as_json" do
+    subject(:json) { sent_message.as_json }
+
+    it "returns a hash with type 'message' and all necessary fields" do
+      expect(json).to eq(
+        "type" => "message",
+        "ts" => "1234567890.123456",
+        "channel" => "C12345678",
+        "thread_ts" => nil,
+        "content" => content,
+        "priorly" => nil
+      )
+    end
+
+    context "when the message is a reply" do
+      let(:response) { Slack::Messages::Message.new({ts: "1234567891.000001", channel: "C12345678", thread_ts: "1234567890.123456"}) }
+
+      it "includes the root thread_ts" do
+        expect(json["thread_ts"]).to eq("1234567890.123456")
+      end
+    end
+
+    context "when priorly is present" do
+      let(:priorly) { [{type: "section", text: {type: "mrkdwn", text: "Previous"}}] }
+
+      it "includes priorly" do
+        expect(json["priorly"]).to eq(priorly)
+      end
+    end
+  end
+
+  describe ".from_json" do
+    subject(:loaded) { described_class.from_json(sent_message.as_json, client:) }
+
+    it "restores ts, channel, content, and priorly" do
+      expect(loaded).to have_attributes(
+        ts: "1234567890.123456",
+        channel: "C12345678",
+        content: content,
+        priorly: nil
+      )
+    end
+
+    it "restores thread_ts as the message's own ts for a root message" do
+      expect(loaded.thread_ts).to eq("1234567890.123456")
+    end
+
+    context "when restoring a reply message" do
+      let(:response) { Slack::Messages::Message.new({ts: "1234567891.000001", channel: "C12345678", thread_ts: "1234567890.123456"}) }
+
+      it "preserves the root thread_ts" do
+        expect(loaded.ts).to eq("1234567891.000001")
+        expect(loaded.thread_ts).to eq("1234567890.123456")
+      end
+    end
+
+    context "when priorly is present" do
+      let(:priorly) { [{type: "section", text: {type: "mrkdwn", text: "Previous"}}] }
+
+      it "restores priorly" do
+        expect(loaded.priorly).to eq(priorly)
+      end
+    end
+
+    context "when the type key is wrong" do
+      subject(:loaded) { described_class.from_json({"type" => "thread"}, client:) }
+
+      it "raises ArgumentError" do
+        expect { loaded }.to raise_error(ArgumentError, /Expected type 'message'/)
+      end
+    end
+
+    context "when the type key is missing" do
+      subject(:loaded) { described_class.from_json({}, client:) }
+
+      it "raises ArgumentError" do
+        expect { loaded }.to raise_error(ArgumentError, /Expected type 'message'/)
+      end
+    end
+
+    context "after a full JSON round-trip (generate + parse)" do
+      subject(:loaded) { described_class.from_json(JSON.parse(JSON.generate(sent_message.as_json)), client:) }
+
+      it "preserves channel" do
+        expect(loaded.channel).to eq("C12345678")
+      end
+
+      it "preserves content with string keys" do
+        expect(loaded.content).to eq([{"type" => "section", "text" => {"type" => "mrkdwn", "text" => "Hello"}}])
+      end
+    end
+  end
+
   describe "#update" do
     let(:response) { Slack::Messages::Message.new({ts: "1234567890.123456", channel: "C12345678"}) }
     before { allow(slack_client).to receive(:chat_update).and_return(response) }
