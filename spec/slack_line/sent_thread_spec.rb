@@ -20,6 +20,69 @@ RSpec.describe SlackLine::SentThread do
     expect(total_size).to eq(sent_messages.map(&:ts).map(&:length).sum)
   end
 
+  describe "#append" do
+    let(:new_message_one) { instance_double(SlackLine::SentMessage, channel: "C12345678", ts: "1234567895.000001") }
+    let(:new_message_two) { instance_double(SlackLine::SentMessage, channel: "C12345678", ts: "1234567895.000002") }
+
+    context "when appending with a string" do
+      let(:extended) { described_class.new(sent_message_one, new_message_one) }
+      before { allow(sent_message_one).to receive(:thread_from).with("New message").and_return(extended) }
+      subject(:result) { sent_thread.append("New message") }
+
+      it "delegates to first.thread_from" do
+        result
+        expect(sent_message_one).to have_received(:thread_from).with("New message")
+      end
+
+      it "returns a SentThread combining all original and new messages" do
+        expect(result).to be_a(SlackLine::SentThread)
+        expect(result.sent_messages).to eq([sent_message_one, sent_message_two, sent_message_tre, new_message_one])
+      end
+    end
+
+    context "when appending with a DSL block" do
+      let(:extended) { described_class.new(sent_message_one, new_message_one) }
+      before { allow(sent_message_one).to receive(:thread_from).and_return(extended) }
+      subject(:result) { sent_thread.append { text "DSL content" } }
+
+      it "delegates the block to first.thread_from" do
+        result
+        expect(sent_message_one).to have_received(:thread_from)
+      end
+
+      it "returns a SentThread combining all original and new messages" do
+        expect(result.sent_messages).to eq([sent_message_one, sent_message_two, sent_message_tre, new_message_one])
+      end
+    end
+
+    context "when appending with a Message object" do
+      let(:client) { instance_double(SlackLine::Client) }
+      let(:message) { SlackLine::Message.new("Message content", client:) }
+      let(:extended) { described_class.new(sent_message_one, new_message_one) }
+      before { allow(sent_message_one).to receive(:thread_from).with(message).and_return(extended) }
+      subject(:result) { sent_thread.append(message) }
+
+      it "delegates to first.thread_from with the Message object" do
+        result
+        expect(sent_message_one).to have_received(:thread_from).with(message)
+      end
+
+      it "returns a SentThread combining all original and new messages" do
+        expect(result.sent_messages).to eq([sent_message_one, sent_message_two, sent_message_tre, new_message_one])
+      end
+    end
+
+    context "when appending multiple messages at once" do
+      let(:extended) { described_class.new(sent_message_one, new_message_one, new_message_two) }
+      before { allow(sent_message_one).to receive(:thread_from).with("First", "Second").and_return(extended) }
+      subject(:result) { sent_thread.append("First", "Second") }
+
+      it "returns a SentThread with all original and all new messages" do
+        expect(result.sent_messages).to eq([sent_message_one, sent_message_two, sent_message_tre, new_message_one, new_message_two])
+      end
+    end
+  end
+
   describe "#inspect" do
     subject(:inspect_output) { sent_thread.inspect }
 

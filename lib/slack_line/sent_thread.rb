@@ -13,6 +13,11 @@ module SlackLine
     def_delegators :first, :channel, :ts
     alias_method :thread_ts, :ts
 
+    def append(*text_or_blocks, &dsl_block)
+      extended = first.thread_from(*text_or_blocks, &dsl_block)
+      SentThread.new(*sent_messages, *extended.sent_messages[1..])
+    end
+
     def inspect = "#<#{self.class} channel=#{channel.inspect} size=#{size} thread_ts=#{thread_ts.inspect}>"
   end
 end
