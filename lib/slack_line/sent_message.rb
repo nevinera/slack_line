@@ -30,15 +30,15 @@ module SlackLine
       new(response:, client:, content: data["content"], priorly: data["priorly"])
     end
 
-    def thread_from(*text_or_blocks, &dsl_block)
+    def append(*text_or_blocks, &dsl_block)
       appended = Thread.new(*text_or_blocks, client:, &dsl_block)
       new_sent = appended.messages.map { |m| m.post(to: channel, thread_ts:) }
       SentThread.new(self, *new_sent)
     end
 
     def update(*text_or_blocks, &dsl_block)
-      updated_message = Message.new(*text_or_blocks, client:, &dsl_block)
-      new_content = updated_message.content.as_json
+      replacement = replacement_message(*text_or_blocks, &dsl_block)
+      new_content = replacement.content.as_json
       response = slack_client.chat_update(channel:, ts:, blocks: new_content)
       SentMessage.new(content: new_content, priorly: content, response:, client:)
     end
@@ -47,5 +47,11 @@ module SlackLine
 
     attr_reader :client
     def_delegators :client, :slack_client
+
+    def replacement_message(*text_or_blocks, &dsl_block)
+      return text_or_blocks.first if text_or_blocks.size == 1 && text_or_blocks.first.is_a?(Message)
+
+      Message.new(*text_or_blocks, client:, &dsl_block)
+    end
   end
 end

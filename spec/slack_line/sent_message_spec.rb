@@ -39,7 +39,7 @@ RSpec.describe SlackLine::SentMessage do
     end
   end
 
-  describe "#thread_from" do
+  describe "#append" do
     let(:configuration) { instance_double(SlackLine::Configuration, bot_name: "TestBot") }
     let(:client) { instance_double(SlackLine::Client, slack_client:, configuration:) }
     let(:new_response) { Slack::Messages::Message.new({ts: "9999999999.000001", channel: "C12345678"}) }
@@ -47,7 +47,7 @@ RSpec.describe SlackLine::SentMessage do
     before { allow(slack_client).to receive(:chat_postMessage).and_return(new_response) }
 
     context "when appending with a string" do
-      subject(:result) { sent_message.thread_from("Reply message") }
+      subject(:result) { sent_message.append("Reply message") }
 
       it "returns a SentThread starting with the original message" do
         expect(result).to be_a(SlackLine::SentThread)
@@ -69,7 +69,7 @@ RSpec.describe SlackLine::SentMessage do
     end
 
     context "when appending with a DSL block" do
-      subject(:result) { sent_message.thread_from { text "DSL reply" } }
+      subject(:result) { sent_message.append { text "DSL reply" } }
 
       it "returns a SentThread with the original message and new reply" do
         expect(result.size).to eq(2)
@@ -86,7 +86,7 @@ RSpec.describe SlackLine::SentMessage do
 
     context "when appending with a Message object" do
       let(:message) { SlackLine::Message.new("Message reply", client:) }
-      subject(:result) { sent_message.thread_from(message) }
+      subject(:result) { sent_message.append(message) }
 
       it "posts the reply with the correct thread_ts and channel" do
         result
@@ -98,7 +98,7 @@ RSpec.describe SlackLine::SentMessage do
 
     context "when the message is itself a reply" do
       let(:response) { Slack::Messages::Message.new({ts: "1234567891.000001", channel: "C12345678", thread_ts: "1234567890.123456"}) }
-      subject(:result) { sent_message.thread_from("Another reply") }
+      subject(:result) { sent_message.append("Another reply") }
 
       it "posts to the root thread_ts, not the reply's own ts" do
         result
@@ -267,6 +267,25 @@ RSpec.describe SlackLine::SentMessage do
           priorly: sent_message.content,
           ts: "1234567890.123456",
           channel: "C12345678"
+        )
+      end
+    end
+
+    context "when updating with a Message object" do
+      let(:message) { SlackLine::Message.new("Updated via Message", client:) }
+      subject(:updated_message) { sent_message.update(message) }
+
+      it "performs the intended API update" do
+        updated_message
+        blocks = [{type: "section", text: {type: "mrkdwn", text: "Updated via Message"}}]
+        expect(slack_client).to have_received(:chat_update).with(channel: "C12345678", ts: "1234567890.123456", blocks:)
+      end
+
+      it "returns the expected SentMessage" do
+        expect(updated_message).to be_a(SlackLine::SentMessage)
+        expect(updated_message).to have_attributes(
+          content: [{type: "section", text: {type: "mrkdwn", text: "Updated via Message"}}],
+          priorly: sent_message.content
         )
       end
     end
