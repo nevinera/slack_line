@@ -28,17 +28,26 @@ end
 
 @step_num = 0
 @failures = []
+@current_group = nil
+
+def group(description, &block)
+  puts "\n#{description}"
+  @current_group = description
+  block.call
+ensure
+  @current_group = nil
+end
 
 def step(description, &block)
   @step_num += 1
   num = @step_num
-  print "[#{num}] #{description}... "
+  print "  [#{num}] #{description}... "
   $stdout.flush
   block.call
   puts "passed"
 rescue => e
   puts "FAILED: #{e.message}"
-  @failures << {num:, description:, error: e.message}
+  @failures << {num:, group: @current_group, description:, error: e.message}
 end
 
 def assert(condition, message = "assertion failed")
@@ -49,79 +58,85 @@ Dir.mktmpdir("slack_line_qa") do |tmpdir|
   msg2_path = File.join(tmpdir, "msg2.json")
   msg3_path = File.join(tmpdir, "msg3.json")
 
-  # ---- Public channel ----
-
-  step "post simple text to ##{public_channel} [1/3]" do
-    result = run_script(*TOKEN_ARGS, "-p", public_channel,
-      "QA [1/3 in ##{public_channel}]: Simple text post via positional args")
-    assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
-    assert result.stderr.include?(public_channel), "stderr did not mention channel: #{result.stderr.strip}"
-  end
-
-  step "post to ##{public_channel} [2/3] with --save" do
-    result = run_script(*TOKEN_ARGS, "-p", public_channel, "-s", msg2_path,
-      "QA [2/3 in ##{public_channel}]: Message saved to file (thread reply expected below)")
-    assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
-    assert File.exist?(msg2_path), "--save did not create file at #{msg2_path}"
-    saved = JSON.parse(File.read(msg2_path)) rescue nil
-    assert saved, "saved file is not valid JSON"
-    assert saved["type"] == "message", "saved JSON has wrong type: #{saved["type"].inspect}"
-  end
-
-  step "append thread reply to [2/3] via --append" do
-    result = run_script(*TOKEN_ARGS, "-a", msg2_path,
-      "QA thread reply for [2/3 in ##{public_channel}] (this message should appear as a thread reply)")
-    assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
-    assert result.stderr.match?(/thread/i), "stderr did not mention thread: #{result.stderr.strip}"
-  end
-
-  step "post to ##{public_channel} [3/3] with --save" do
-    result = run_script(*TOKEN_ARGS, "-p", public_channel, "-s", msg3_path,
-      "QA [3/3 in ##{public_channel}]: Message to be updated in place (should read 'UPDATED' after this step)")
-    assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
-    assert File.exist?(msg3_path), "--save did not create file at #{msg3_path}"
-  end
-
-  step "update [3/3] in place via --update" do
-    result = run_script(*TOKEN_ARGS, "-U", msg3_path,
-      "QA [3/3 in ##{public_channel}]: UPDATED — message was successfully updated in place")
-    assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
-    assert result.stderr.match?(/[Uu]pdated/), "stderr did not confirm update: #{result.stderr.strip}"
-  end
-
-  # ---- Private channel ----
-
-  step "post simple text to ##{private_channel} [1/1]" do
-    result = run_script(*TOKEN_ARGS, "-p", private_channel,
-      "QA [1/1 in ##{private_channel}]: Simple text post to private channel")
-    assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
-    assert result.stderr.include?(private_channel), "stderr did not mention channel: #{result.stderr.strip}"
-  end
-
-  # ---- Non-posting ----
-
-  step "preview mode exits 0 with JSON on stdout and builder URL on stderr" do
-    result = run_script(*TOKEN_ARGS, "QA preview-only message — not posted")
-    assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
-    assert result.stderr.include?("block-kit-builder"), "stderr did not include builder URL: #{result.stderr.strip}"
-    parsed = begin
-      JSON.parse(result.stdout)
-    rescue
-      nil
+  group "Simple text post to ##{public_channel} [1/3]" do
+    step "posts and reports channel on stderr" do
+      result = run_script(*TOKEN_ARGS, "-p", public_channel,
+        "QA [1/3 in ##{public_channel}]: Simple text post via positional args")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.include?(public_channel), "stderr did not mention channel: #{result.stderr.strip}"
     end
-    assert parsed, "stdout was not valid JSON: #{result.stdout.strip}"
   end
 
-  step "--post-to and --append together exits nonzero with helpful error" do
-    result = run_script(*TOKEN_ARGS, "-p", public_channel, "-a", msg2_path, "some text")
-    assert result.failure?, "expected nonzero exit, got 0"
-    assert result.stderr.match?(/--append|--post-to/i), "error not helpful: #{result.stderr.strip}"
+  group "Post with --save, then --append a thread reply [2/3 in ##{public_channel}]" do
+    step "posts and saves valid message JSON to disk" do
+      result = run_script(*TOKEN_ARGS, "-p", public_channel, "-s", msg2_path,
+        "QA [2/3 in ##{public_channel}]: Message saved to file (thread reply expected below)")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert File.exist?(msg2_path), "--save did not create file at #{msg2_path}"
+      saved = JSON.parse(File.read(msg2_path)) rescue nil
+      assert saved, "saved file is not valid JSON"
+      assert saved["type"] == "message", "saved JSON has wrong type: #{saved["type"].inspect}"
+    end
+
+    step "appends thread reply from saved file and reports thread on stderr" do
+      result = run_script(*TOKEN_ARGS, "-a", msg2_path,
+        "QA thread reply for [2/3 in ##{public_channel}] (this message should appear as a thread reply)")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.match?(/thread/i), "stderr did not mention thread: #{result.stderr.strip}"
+    end
   end
 
-  step "--message-number without --update exits nonzero with helpful error" do
-    result = run_script(*TOKEN_ARGS, "-m", "0", "-p", public_channel, "some text")
-    assert result.failure?, "expected nonzero exit, got 0"
-    assert result.stderr.match?(/--message-number|--update/i), "error not helpful: #{result.stderr.strip}"
+  group "Post with --save, then --update in place [3/3 in ##{public_channel}]" do
+    step "posts and saves valid message JSON to disk" do
+      result = run_script(*TOKEN_ARGS, "-p", public_channel, "-s", msg3_path,
+        "QA [3/3 in ##{public_channel}]: Message to be updated in place (should read 'UPDATED' after this step)")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert File.exist?(msg3_path), "--save did not create file at #{msg3_path}"
+    end
+
+    step "updates saved message in place and reports update on stderr" do
+      result = run_script(*TOKEN_ARGS, "-U", msg3_path,
+        "QA [3/3 in ##{public_channel}]: UPDATED — message was successfully updated in place")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.match?(/[Uu]pdated/), "stderr did not confirm update: #{result.stderr.strip}"
+    end
+  end
+
+  group "Simple text post to ##{private_channel} [1/1]" do
+    step "posts and reports channel on stderr" do
+      result = run_script(*TOKEN_ARGS, "-p", private_channel,
+        "QA [1/1 in ##{private_channel}]: Simple text post to private channel")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.include?(private_channel), "stderr did not mention channel: #{result.stderr.strip}"
+    end
+  end
+
+  group "Preview mode (no --post-to)" do
+    step "exits 0, writes JSON to stdout, writes builder URL to stderr" do
+      result = run_script(*TOKEN_ARGS, "QA preview-only message — not posted")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.include?("block-kit-builder"), "stderr did not include builder URL: #{result.stderr.strip}"
+      parsed = begin
+        JSON.parse(result.stdout)
+      rescue
+        nil
+      end
+      assert parsed, "stdout was not valid JSON: #{result.stdout.strip}"
+    end
+  end
+
+  group "Error handling" do
+    step "--post-to and --append together exits nonzero with helpful error" do
+      result = run_script(*TOKEN_ARGS, "-p", public_channel, "-a", msg2_path, "some text")
+      assert result.failure?, "expected nonzero exit, got 0"
+      assert result.stderr.match?(/--append|--post-to/i), "error not helpful: #{result.stderr.strip}"
+    end
+
+    step "--message-number without --update exits nonzero with helpful error" do
+      result = run_script(*TOKEN_ARGS, "-m", "0", "-p", public_channel, "some text")
+      assert result.failure?, "expected nonzero exit, got 0"
+      assert result.stderr.match?(/--message-number|--update/i), "error not helpful: #{result.stderr.strip}"
+    end
   end
 end
 
@@ -130,6 +145,9 @@ if @failures.empty?
   puts "All passed."
 else
   puts "#{@failures.size} failure(s):"
-  @failures.each { |f| puts "  [#{f[:num]}] #{f[:description]}: #{f[:error]}" }
+  @failures.each do |f|
+    label = f[:group] ? "#{f[:group]} / #{f[:description]}" : f[:description]
+    puts "  [#{f[:num]}] #{label}: #{f[:error]}"
+  end
   exit 1
 end
