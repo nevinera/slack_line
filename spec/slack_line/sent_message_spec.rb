@@ -271,6 +271,25 @@ RSpec.describe SlackLine::SentMessage do
       end
     end
 
+    context "when updating with a Message object" do
+      let(:message) { SlackLine::Message.new("Updated via Message", client:) }
+      subject(:updated_message) { sent_message.update(message) }
+
+      it "performs the intended API update" do
+        updated_message
+        blocks = [{type: "section", text: {type: "mrkdwn", text: "Updated via Message"}}]
+        expect(slack_client).to have_received(:chat_update).with(channel: "C12345678", ts: "1234567890.123456", blocks:)
+      end
+
+      it "returns the expected SentMessage" do
+        expect(updated_message).to be_a(SlackLine::SentMessage)
+        expect(updated_message).to have_attributes(
+          content: [{type: "section", text: {type: "mrkdwn", text: "Updated via Message"}}],
+          priorly: sent_message.content
+        )
+      end
+    end
+
     context "when updating with BlockKit data" do
       let(:new_blocks) { Slack::BlockKit.blocks { |b| b.section { |s| s.mrkdwn(text: "Updated content via BlockKit") } } }
       subject(:updated_message) { sent_message.update(new_blocks) }
