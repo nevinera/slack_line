@@ -26,12 +26,12 @@ RSpec.describe SlackLine::SentThread do
 
     context "when appending with a string" do
       let(:extended) { described_class.new(sent_message_one, new_message_one) }
-      before { allow(sent_message_one).to receive(:thread_from).with("New message").and_return(extended) }
+      before { allow(sent_message_one).to receive(:append).with("New message").and_return(extended) }
       subject(:result) { sent_thread.append("New message") }
 
-      it "delegates to first.thread_from" do
+      it "delegates to first.append" do
         result
-        expect(sent_message_one).to have_received(:thread_from).with("New message")
+        expect(sent_message_one).to have_received(:append).with("New message")
       end
 
       it "returns a SentThread combining all original and new messages" do
@@ -42,12 +42,12 @@ RSpec.describe SlackLine::SentThread do
 
     context "when appending with a DSL block" do
       let(:extended) { described_class.new(sent_message_one, new_message_one) }
-      before { allow(sent_message_one).to receive(:thread_from).and_return(extended) }
+      before { allow(sent_message_one).to receive(:append).and_return(extended) }
       subject(:result) { sent_thread.append { text "DSL content" } }
 
-      it "delegates the block to first.thread_from" do
+      it "delegates the block to first.append" do
         result
-        expect(sent_message_one).to have_received(:thread_from)
+        expect(sent_message_one).to have_received(:append)
       end
 
       it "returns a SentThread combining all original and new messages" do
@@ -59,12 +59,12 @@ RSpec.describe SlackLine::SentThread do
       let(:client) { instance_double(SlackLine::Client) }
       let(:message) { SlackLine::Message.new("Message content", client:) }
       let(:extended) { described_class.new(sent_message_one, new_message_one) }
-      before { allow(sent_message_one).to receive(:thread_from).with(message).and_return(extended) }
+      before { allow(sent_message_one).to receive(:append).with(message).and_return(extended) }
       subject(:result) { sent_thread.append(message) }
 
-      it "delegates to first.thread_from with the Message object" do
+      it "delegates to first.append with the Message object" do
         result
-        expect(sent_message_one).to have_received(:thread_from).with(message)
+        expect(sent_message_one).to have_received(:append).with(message)
       end
 
       it "returns a SentThread combining all original and new messages" do
@@ -74,7 +74,7 @@ RSpec.describe SlackLine::SentThread do
 
     context "when appending multiple messages at once" do
       let(:extended) { described_class.new(sent_message_one, new_message_one, new_message_two) }
-      before { allow(sent_message_one).to receive(:thread_from).with("First", "Second").and_return(extended) }
+      before { allow(sent_message_one).to receive(:append).with("First", "Second").and_return(extended) }
       subject(:result) { sent_thread.append("First", "Second") }
 
       it "returns a SentThread with all original and all new messages" do

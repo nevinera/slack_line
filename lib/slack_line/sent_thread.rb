@@ -14,7 +14,7 @@ module SlackLine
     alias_method :thread_ts, :ts
 
     def append(*text_or_blocks, &dsl_block)
-      extended = first.thread_from(*text_or_blocks, &dsl_block)
+      extended = first.append(*text_or_blocks, &dsl_block)
       SentThread.new(*sent_messages, *extended.sent_messages[1..])
     end
 

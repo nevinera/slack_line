@@ -30,7 +30,7 @@ module SlackLine
       new(response:, client:, content: data["content"], priorly: data["priorly"])
     end
 
-    def thread_from(*text_or_blocks, &dsl_block)
+    def append(*text_or_blocks, &dsl_block)
       appended = Thread.new(*text_or_blocks, client:, &dsl_block)
       new_sent = appended.messages.map { |m| m.post(to: channel, thread_ts:) }
       SentThread.new(self, *new_sent)
