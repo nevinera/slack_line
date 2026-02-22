@@ -54,6 +54,13 @@ def assert(condition, message = "assertion failed")
   raise message unless condition
 end
 
+puts "Announcing QA run in ##{public_channel} and ##{private_channel}..."
+[public_channel, private_channel].each do |channel|
+  result = run_script(MESSAGE_SCRIPT, "-p", channel,
+    "QA run starting — #{Time.now.strftime("%Y-%m-%d %H:%M:%S %Z")}")
+  abort "Failed to post announcement to ##{channel}: #{result.stderr.strip}" unless result.success?
+end
+
 Dir.mktmpdir("slack_line_qa") do |tmpdir|
   msg2_path = File.join(tmpdir, "msg2.json")
   msg3_path = File.join(tmpdir, "msg3.json")
