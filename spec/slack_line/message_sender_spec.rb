@@ -6,7 +6,7 @@ RSpec.describe SlackLine::MessageSender do
 
   let(:response) { Slack::Messages::Message.new({ok: true, ts: "1234567890.123456", channel: "A1792321"}) }
   let(:slack_client) { instance_double(Slack::Web::Client, chat_postMessage: response) }
-  let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default", bot_name: "MyBot") }
+  let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default", bot_name: "MyBot", backoff: true) }
   let(:users) { instance_double(SlackLine::Users) }
   let(:client) { instance_double(SlackLine::Client, configuration:, slack_client:, users:) }
 
@@ -54,6 +54,56 @@ RSpec.describe SlackLine::MessageSender do
         expect(users).to have_received(:find).with(display_name: "alice")
         expect(slack_client).to have_received(:chat_postMessage)
           .with(channel: "U12345", blocks: content.as_json, thread_ts: nil, username: "MyBot")
+      end
+    end
+
+    context "when Slack rate-limits the request" do
+      let(:rate_limit_error) do
+        Class.new(Slack::Web::Api::Errors::TooManyRequestsError) do
+          def initialize = nil
+          def retry_after = 0
+        end.new
+      end
+
+      context "and backoff is enabled" do
+        before { allow(configuration).to receive(:backoff).and_return(true) }
+
+        context "and the retry succeeds" do
+          before do
+            call_count = 0
+            allow(slack_client).to receive(:chat_postMessage) do
+              call_count += 1
+              raise rate_limit_error if call_count == 1
+              response
+            end
+          end
+
+          it "retries and returns a SentMessage" do
+            expect(sent_message).to be_a(SlackLine::SentMessage)
+            expect(slack_client).to have_received(:chat_postMessage).twice
+          end
+        end
+
+        context "and the request is rate-limited more than twice" do
+          before { allow(slack_client).to receive(:chat_postMessage).and_raise(rate_limit_error) }
+
+          it "raises the error after 2 retries" do
+            expect { sent_message }.to raise_error(Slack::Web::Api::Errors::TooManyRequestsError)
+            expect(slack_client).to have_received(:chat_postMessage).exactly(3).times
+          end
+        end
+      end
+
+      context "and backoff is disabled" do
+        before do
+          allow(configuration).to receive(:backoff).and_return(false)
+          allow(slack_client).to receive(:chat_postMessage).and_raise(rate_limit_error)
+        end
+
+        it "raises the error immediately without retrying" do
+          expect { sent_message }.to raise_error(Slack::Web::Api::Errors::TooManyRequestsError)
+          expect(slack_client).to have_received(:chat_postMessage).once
+        end
       end
     end
   end

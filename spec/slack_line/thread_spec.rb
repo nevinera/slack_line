@@ -1,5 +1,5 @@
 RSpec.describe SlackLine::Thread do
-  let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default", bot_name: "TestBot") }
+  let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default", bot_name: "TestBot", backoff: true) }
   let(:slack_client) { instance_double(Slack::Web::Client) }
   let(:client) { instance_double(SlackLine::Client, configuration:, slack_client:) }
 

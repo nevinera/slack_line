@@ -234,6 +234,16 @@ RSpec.describe SlackLine::Cli::SlackLineMessage do
     end
   end
 
+  describe "with --no-backoff" do
+    let(:argv) { %w[--slack-token fake-token --no-backoff Hello] }
+
+    without_env("SLACK_LINE_NO_BACKOFF")
+
+    it "disables backoff in configuration" do
+      expect(cli.configuration.backoff).to be false
+    end
+  end
+
   describe "DSL mode (no content args)" do
     context "with --update" do
       let(:argv) { %w[--slack-token fake-token --update /tmp/msg.json] }
