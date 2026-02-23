@@ -7,7 +7,8 @@ RSpec.describe SlackLine::Configuration do
     "SLACK_LINE_BOT_NAME",
     "SLACK_LINE_DEFAULT_CHANNEL",
     "SLACK_LINE_PER_MESSAGE_DELAY",
-    "SLACK_LINE_PER_THREAD_DELAY"
+    "SLACK_LINE_PER_THREAD_DELAY",
+    "SLACK_LINE_NO_BACKOFF"
   )
 
   let(:base_config) { nil }
@@ -23,6 +24,7 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.default_channel).to be_nil
       expect(configuration.per_message_delay).to be_within(0.001).of(0.0)
       expect(configuration.per_thread_delay).to be_within(0.001).of(0.0)
+      expect(configuration.backoff).to be true
     end
   end
 
@@ -34,7 +36,8 @@ RSpec.describe SlackLine::Configuration do
         bot_name: "BaseBot",
         default_channel: "#base-channel",
         per_message_delay: 1.0,
-        per_thread_delay: 2.0
+        per_thread_delay: 2.0,
+        backoff: false
       )
     end
 
@@ -45,6 +48,7 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.default_channel).to eq("#base-channel")
       expect(configuration.per_message_delay).to be_within(0.001).of(1.0)
       expect(configuration.per_thread_delay).to be_within(0.001).of(2.0)
+      expect(configuration.backoff).to be false
     end
 
     context "AND overrides" do
@@ -57,6 +61,7 @@ RSpec.describe SlackLine::Configuration do
         expect(configuration.default_channel).to eq("#base-channel")
         expect(configuration.per_message_delay).to be_within(0.001).of(1.0)
         expect(configuration.per_thread_delay).to be_within(0.001).of(3.0)
+        expect(configuration.backoff).to be false
       end
     end
   end
@@ -69,7 +74,8 @@ RSpec.describe SlackLine::Configuration do
         bot_name: "OverrideBot",
         default_channel: "#override-channel",
         per_message_delay: 0.5,
-        per_thread_delay: 1.5
+        per_thread_delay: 1.5,
+        backoff: false
       }
     end
 
@@ -80,6 +86,7 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.default_channel).to eq("#override-channel")
       expect(configuration.per_message_delay).to be_within(0.001).of(0.5)
       expect(configuration.per_thread_delay).to be_within(0.001).of(1.5)
+      expect(configuration.backoff).to be false
     end
   end
 
@@ -100,6 +107,7 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.default_channel).to eq("#env-channel")
       expect(configuration.per_message_delay).to be_within(0.001).of(0.25)
       expect(configuration.per_thread_delay).to be_within(0.001).of(0.75)
+      expect(configuration.backoff).to be true
     end
 
     context "AND some overrides" do
@@ -112,7 +120,24 @@ RSpec.describe SlackLine::Configuration do
         expect(configuration.default_channel).to eq("#env-channel")
         expect(configuration.per_message_delay).to be_within(0.001).of(0.1)
         expect(configuration.per_thread_delay).to be_within(0.001).of(0.75)
+        expect(configuration.backoff).to be true
       end
+    end
+  end
+
+  context "when SLACK_LINE_NO_BACKOFF is set" do
+    with_env("SLACK_LINE_NO_BACKOFF" => "true")
+
+    it "sets backoff to false" do
+      expect(configuration.backoff).to be false
+    end
+  end
+
+  context "when SLACK_LINE_NO_BACKOFF is set to a falsy value" do
+    with_env("SLACK_LINE_NO_BACKOFF" => "false")
+
+    it "leaves backoff enabled" do
+      expect(configuration.backoff).to be true
     end
   end
 end
