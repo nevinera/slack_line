@@ -20,7 +20,7 @@ module SlackLine
 
       def options
         return @options if defined?(@options)
-        opts = {post_to: nil, save: nil, slack_token: nil, look_up_users: nil, bot_name: nil}
+        opts = {post_to: nil, save: nil, slack_token: nil, look_up_users: nil, bot_name: nil, backoff: nil}
         remaining = option_parser(opts).parse(@argv.dup)
         if remaining.empty?
           opts[:dsl] = read_stdin
@@ -32,7 +32,7 @@ module SlackLine
 
       def configuration
         return @configuration if defined?(@configuration)
-        cfg_opts = options.slice(:slack_token, :look_up_users, :bot_name).compact
+        cfg_opts = options.slice(:slack_token, :look_up_users, :bot_name, :backoff).compact
         @configuration = Configuration.new(nil, **cfg_opts)
       end
 
@@ -47,6 +47,7 @@ module SlackLine
           parser.on("-n", "--bot-name NAME") { |n| opts[:bot_name] = n }
           parser.on("-p", "--post-to TARGET") { |t| opts[:post_to] = t }
           parser.on("-s", "--save PATH") { |p| opts[:save] = p }
+          parser.on("--no-backoff") { opts[:backoff] = false }
         end
       end
 
