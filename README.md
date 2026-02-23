@@ -121,3 +121,12 @@ BAR_SLACK = SlackLine::Client.new(default_channel: "#team-bar", bot_name: "BarBo
 BAR_SLACK.thread("Message 1", "Message 2").post
 BAR_SLACK.message("Message 3", to: "#bar-team-3").post
 ```
+
+## Slack App Permissions
+
+In order to post/update messages, the app behind your `SLACK_LINE_TOKEN` can use these permissions:
+
+* `chat:write` - send messages at all.
+* `chat:write.public` - send messages to public channels your app _isn't a member of_ (so you don't
+  need to invite them to the relevant channels to make them work).
+* `im:write` - start direct messages with individuals.
