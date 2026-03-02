@@ -70,4 +70,14 @@ RSpec.describe SlackLine::Client do
       expect(client.users).to be(users)
     end
   end
+
+  describe "#groups" do
+    subject(:groups) { client.groups }
+
+    it { is_expected.to be_a(SlackLine::Groups) }
+
+    it "is memoized" do
+      expect(client.groups).to be(groups)
+    end
+  end
 end

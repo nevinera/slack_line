@@ -6,9 +6,10 @@ RSpec.describe SlackLine::MessageSender do
 
   let(:response) { Slack::Messages::Message.new({ok: true, ts: "1234567890.123456", channel: "A1792321"}) }
   let(:slack_client) { instance_double(Slack::Web::Client, chat_postMessage: response) }
-  let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default", bot_name: "MyBot", backoff: true) }
+  let(:configuration) { instance_double(SlackLine::Configuration, default_channel: "#default", bot_name: "MyBot", backoff: true, look_up_users?: false) }
   let(:users) { instance_double(SlackLine::Users) }
-  let(:client) { instance_double(SlackLine::Client, configuration:, slack_client:, users:) }
+  let(:groups) { instance_double(SlackLine::Groups) }
+  let(:client) { instance_double(SlackLine::Client, configuration:, slack_client:, users:, groups:) }
 
   let(:to) { nil }
   let(:thread_ts) { nil }
@@ -54,6 +55,36 @@ RSpec.describe SlackLine::MessageSender do
         expect(users).to have_received(:find).with(display_name: "alice")
         expect(slack_client).to have_received(:chat_postMessage)
           .with(channel: "U12345", blocks: content.as_json, thread_ts: nil, username: "MyBot")
+      end
+
+      context "when the user is not found" do
+        let(:users) { instance_double(SlackLine::Users, find: nil) }
+
+        it "raises UserNotFoundError" do
+          expect { sent_message }.to raise_error(
+            SlackLine::UserNotFoundError,
+            "User with display name 'alice' was not found."
+          )
+        end
+      end
+    end
+
+    context "when look_up_users is enabled" do
+      let(:content) { Slack::BlockKit.blocks { |b| b.section { |s| s.mrkdwn(text: "Hello @alice") } } }
+      let(:alice) { Slack::Messages::Message.new(id: "U001", profile: {display_name: "alice"}) }
+      let(:users) { instance_double(SlackLine::Users, find: nil) }
+      let(:groups) { instance_double(SlackLine::Groups, find: nil) }
+
+      before do
+        allow(configuration).to receive(:look_up_users?).and_return(true)
+        allow(users).to receive(:find).with(display_name: "alice").and_return(alice)
+      end
+
+      it "converts mentions before sending" do
+        sent_message
+        converted_blocks = [{type: "section", text: {type: "mrkdwn", text: "Hello <@U001>"}}]
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "#default", blocks: converted_blocks, thread_ts: nil, username: "MyBot")
       end
     end
 

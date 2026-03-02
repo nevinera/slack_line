@@ -23,7 +23,8 @@ module SlackLine
     memoize def target
       if supplied_target.start_with?("@")
         name = supplied_target[1..]
-        client.users.find(display_name: name).id
+        client.users.find(display_name: name)&.id ||
+          raise(UserNotFoundError, "User with display name '#{name}' was not found.")
       else
         supplied_target
       end
@@ -63,7 +64,12 @@ module SlackLine
     attr_reader :message, :to, :thread_ts, :client
     def_delegators :client, :configuration, :slack_client
     def_delegators :message, :content
+    def_delegators :configuration, :look_up_users?
 
-    memoize def content_data = content.as_json
+    memoize def raw_content_data = content.as_json
+
+    memoize def converter = MessageConverter.new(raw_content_data, client:)
+
+    memoize def content_data = look_up_users? ? converter.convert : raw_content_data
   end
 end
