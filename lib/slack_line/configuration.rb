@@ -5,6 +5,8 @@ module SlackLine
       :per_message_delay, :per_thread_delay,
       :backoff
 
+    alias_method :look_up_users?, :look_up_users
+
     DEFAULTS = {
       slack_token: nil,
       look_up_users: false,
