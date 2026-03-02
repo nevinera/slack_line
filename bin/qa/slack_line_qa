@@ -23,6 +23,12 @@ ScriptResult = Struct.new(:stdout, :stderr, :exit_status, keyword_init: true) do
   def failure? = !success?
 end
 
+def rescued
+  yield
+rescue
+  nil
+end
+
 def run_script(script, *args, stdin: nil)
   stdout, stderr, status = Open3.capture3("ruby", script, *args, stdin_data: stdin.to_s)
   ScriptResult.new(stdout:, stderr:, exit_status: status.exitstatus)
@@ -85,7 +91,7 @@ Dir.mktmpdir("slack_line_qa") do |tmpdir|
         "QA msg [2/3 in ##{public_channel}]: Message saved to file (thread reply expected below)")
       assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
       assert File.exist?(msg2_path), "--save did not create file at #{msg2_path}"
-      saved = JSON.parse(File.read(msg2_path)) rescue nil
+      saved = rescued { JSON.parse(File.read(msg2_path)) }
       assert saved, "saved file is not valid JSON"
       assert saved["type"] == "message", "saved JSON has wrong type: #{saved["type"].inspect}"
     end
@@ -196,7 +202,7 @@ Dir.mktmpdir("slack_line_qa") do |tmpdir|
         "QA thread [2/2 in ##{public_channel}]: Thread saved to file — message 2 of 2")
       assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
       assert File.exist?(thread2_path), "--save did not create file at #{thread2_path}"
-      saved = JSON.parse(File.read(thread2_path)) rescue nil
+      saved = rescued { JSON.parse(File.read(thread2_path)) }
       assert saved, "saved file is not valid JSON"
       assert saved["type"] == "thread", "saved JSON has wrong type: #{saved["type"].inspect}"
       assert saved["messages"].size == 2, "expected 2 messages in saved thread, got #{saved["messages"].size}"

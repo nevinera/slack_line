@@ -124,11 +124,13 @@ BAR_SLACK.message("Message 3", to: "#bar-team-3").post
 
 ## Slack App Permissions
 
-In order to post/update messages, the app behind your `SLACK_LINE_TOKEN` can use these permissions:
+In order to post/update messages, the app behind your `SLACK_LINE_TOKEN` can use
+these permissions:
 
 * `chat:write` - send messages at all.
-* `chat:write.public` - send messages to public channels your app _isn't a member of_ (so you don't
-  need to invite them to the relevant channels to make them work).
+* `chat:write.public` - send messages to public channels your app _isn't a member
+  of_ (so you don't need to invite them to the relevant channels to make them work).
 * `im:write` - start direct messages with individuals.
-* `users:read` and `usergroups:read` - look up users/groups for (a) messaging them directly or
-  (b) supporting the `look_up_users` config option (for those more restrictive workspaces)
+* `users:read` and `usergroups:read` - look up users/groups for (a) messaging them
+  directly or (b) supporting the `look_up_users` config option (for those more
+  restrictive workspaces)

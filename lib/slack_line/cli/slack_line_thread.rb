@@ -40,7 +40,7 @@ module SlackLine
 
       attr_reader :stdout, :stderr
 
-      def option_parser(opts)
+      def option_parser(opts) # rubocop:disable Metrics/AbcSize
         OptionParser.new do |parser|
           parser.on("-t", "--slack-token TOKEN") { |t| opts[:slack_token] = t }
           parser.on("-u", "--look-up-users") { opts[:look_up_users] = true }
