@@ -40,7 +40,7 @@ RSpec.describe SlackLine::SentMessage do
   end
 
   describe "#append" do
-    let(:configuration) { instance_double(SlackLine::Configuration, bot_name: "TestBot", default_channel: nil, backoff: true) }
+    let(:configuration) { instance_double(SlackLine::Configuration, bot_name: "TestBot", default_channel: nil, backoff: true, look_up_users?: false) }
     let(:client) { instance_double(SlackLine::Client, slack_client:, configuration:) }
     let(:new_response) { Slack::Messages::Message.new({ts: "9999999999.000001", channel: "C12345678"}) }
 
