@@ -6,12 +6,12 @@ Gem::Specification.new do |spec|
   spec.authors = ["Eric Mueller"]
   spec.email = ["nevinera@gmail.com"]
 
-  spec.summary = "Build CLIs that are configured via args, file, and/or environment"
+  spec.summary = "A gem to send and extend Slack threads and messages"
   spec.description = <<~DESC
-    We've written code that merges/cascades default configuration, config-files,
-    environment variables, and cli-passed arguments _too many times_. This gem
-    intends to distill that into a configuration hash describing those controls
-    and relationships, so that users can supply values in multiple ways.
+    Sending messages with the Slack API is not that difficult, but I've had
+    to solve the same problems a lot of times at different companies. This
+    gem attempts to make those solutions irrelevant by providing a simple
+    interface and scripts to send and update messages, and build/extend threads.
   DESC
   spec.homepage = "https://github.com/nevinera/slack_line"
   spec.license = "MIT"
