@@ -2,15 +2,17 @@
 # frozen_string_literal: true
 
 # Exercises bin/slack_line_message and bin/slack_line_thread against real Slack channels.
-# Usage: bin/qa/slack_line_qa PUBLIC_CHANNEL PRIVATE_CHANNEL
+# Usage: bin/qa/slack_line_qa PUBLIC_CHANNEL PRIVATE_CHANNEL [MENTION_HANDLE]
+# MENTION_HANDLE: a user or group handle (without @) to verify look_up_users resolution
 # Requires: SLACK_LINE_SLACK_TOKEN environment variable
 
 require "open3"
 require "tmpdir"
 require "json"
 
-public_channel = ARGV[0] or abort "Usage: #{$PROGRAM_NAME} PUBLIC_CHANNEL PRIVATE_CHANNEL"
-private_channel = ARGV[1] or abort "Usage: #{$PROGRAM_NAME} PUBLIC_CHANNEL PRIVATE_CHANNEL"
+public_channel = ARGV[0] or abort "Usage: #{$PROGRAM_NAME} PUBLIC_CHANNEL PRIVATE_CHANNEL [MENTION_HANDLE]"
+private_channel = ARGV[1] or abort "Usage: #{$PROGRAM_NAME} PUBLIC_CHANNEL PRIVATE_CHANNEL [MENTION_HANDLE]"
+mention_handle = ARGV[2]
 abort "SLACK_LINE_SLACK_TOKEN is required" unless ENV["SLACK_LINE_SLACK_TOKEN"]
 
 MESSAGE_SCRIPT = File.expand_path("../slack_line_message", __dir__)
@@ -146,6 +148,29 @@ Dir.mktmpdir("slack_line_qa") do |tmpdir|
       result = run_script(MESSAGE_SCRIPT, "-m", "0", "-p", public_channel, "some text")
       assert result.failure?, "expected nonzero exit, got 0"
       assert result.stderr.match?(/--message-number|--update/i), "error not helpful: #{result.stderr.strip}"
+    end
+  end
+
+  # ---- look_up_users ----
+
+  mention_text = mention_handle ? "@#{mention_handle}" : "@unknown-handle-qa-test"
+  resolve_note = mention_handle ? "(mention should be resolved to a Slack link)" : "(no handle provided — mention should be left as-is)"
+
+  group "slack_line_message: look_up_users post to ##{public_channel}" do
+    step "posts with -u flag and #{resolve_note}" do
+      result = run_script(MESSAGE_SCRIPT, "-p", public_channel, "-u",
+        "QA look_up_users [##{public_channel}]: #{mention_text} #{resolve_note}")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.include?(public_channel), "stderr did not mention channel: #{result.stderr.strip}"
+    end
+  end
+
+  group "slack_line_message: look_up_users post to ##{private_channel}" do
+    step "posts with -u flag and #{resolve_note}" do
+      result = run_script(MESSAGE_SCRIPT, "-p", private_channel, "-u",
+        "QA look_up_users [##{private_channel}]: #{mention_text} #{resolve_note}")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.include?(private_channel), "stderr did not mention channel: #{result.stderr.strip}"
     end
   end
 
