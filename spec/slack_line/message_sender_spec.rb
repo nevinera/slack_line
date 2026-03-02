@@ -55,6 +55,17 @@ RSpec.describe SlackLine::MessageSender do
         expect(slack_client).to have_received(:chat_postMessage)
           .with(channel: "U12345", blocks: content.as_json, thread_ts: nil, username: "MyBot")
       end
+
+      context "when the user is not found" do
+        let(:users) { instance_double(SlackLine::Users, find: nil) }
+
+        it "raises UserNotFoundError" do
+          expect { sent_message }.to raise_error(
+            SlackLine::UserNotFoundError,
+            "User with display name 'alice' was not found."
+          )
+        end
+      end
     end
 
     context "when Slack rate-limits the request" do

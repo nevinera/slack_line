@@ -23,7 +23,8 @@ module SlackLine
     memoize def target
       if supplied_target.start_with?("@")
         name = supplied_target[1..]
-        client.users.find(display_name: name).id
+        client.users.find(display_name: name)&.id ||
+          raise(UserNotFoundError, "User with display name '#{name}' was not found.")
       else
         supplied_target
       end

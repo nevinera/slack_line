@@ -9,8 +9,7 @@ module SlackLine
     memoize def all = all_users.reject(&:deleted).reject(&:is_bot)
 
     def find(display_name:)
-      users_by_display_name[display_name.downcase] ||
-        fail(UserNotFoundError, "User with display name '#{display_name}' was not found.")
+      users_by_display_name[display_name.downcase]
     end
 
     private

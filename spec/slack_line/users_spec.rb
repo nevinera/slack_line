@@ -51,11 +51,8 @@ RSpec.describe SlackLine::Users do
       expect(user).to have_attributes(id: "U01")
     end
 
-    it "raises UserNotFoundError if the user is not found" do
-      expect { users.find(display_name: "NonExistentUser") }.to raise_error(
-        SlackLine::UserNotFoundError,
-        "User with display name 'NonExistentUser' was not found."
-      )
+    it "returns nil if the user is not found" do
+      expect(users.find(display_name: "NonExistentUser")).to be_nil
     end
   end
 end
