@@ -20,7 +20,7 @@ module SlackLine
 
       def options
         return @options if defined?(@options)
-        opts = {post_to: nil, save: nil, slack_token: nil, look_up_users: nil, bot_name: nil, backoff: nil}
+        opts = {post_to: nil, save: nil, slack_token: nil, look_up_users: nil, bot_name: nil, backoff: nil, cache_path: nil, cache_duration: nil}
         remaining = option_parser(opts).parse(@argv.dup)
         if remaining.empty?
           opts[:dsl] = read_stdin
@@ -32,7 +32,7 @@ module SlackLine
 
       def configuration
         return @configuration if defined?(@configuration)
-        cfg_opts = options.slice(:slack_token, :look_up_users, :bot_name, :backoff).compact
+        cfg_opts = options.slice(:slack_token, :look_up_users, :bot_name, :backoff, :cache_path, :cache_duration).compact
         @configuration = Configuration.new(nil, **cfg_opts)
       end
 
@@ -48,6 +48,8 @@ module SlackLine
           parser.on("-p", "--post-to TARGET") { |t| opts[:post_to] = t }
           parser.on("-s", "--save PATH") { |p| opts[:save] = p }
           parser.on("--no-backoff") { opts[:backoff] = false }
+          parser.on("--cache-path PATH") { |p| opts[:cache_path] = p }
+          parser.on("--cache-duration DURATION") { |d| opts[:cache_duration] = d }
         end
       end
 

@@ -244,6 +244,26 @@ RSpec.describe SlackLine::Cli::SlackLineMessage do
     end
   end
 
+  describe "with --cache-path" do
+    let(:argv) { %w[--slack-token fake-token --cache-path /tmp/cache Hello] }
+
+    without_env("SLACK_LINE_CACHE_PATH")
+
+    it "sets cache_path in configuration" do
+      expect(cli.configuration.cache_path).to eq("/tmp/cache")
+    end
+  end
+
+  describe "with --cache-duration" do
+    let(:argv) { %w[--slack-token fake-token --cache-duration 30m Hello] }
+
+    without_env("SLACK_LINE_CACHE_DURATION")
+
+    it "sets cache_duration in configuration" do
+      expect(cli.configuration.cache_duration).to eq(1800)
+    end
+  end
+
   describe "DSL mode (no content args)" do
     context "with --update" do
       let(:argv) { %w[--slack-token fake-token --update /tmp/msg.json] }
