@@ -16,8 +16,8 @@ module SlackLine
 
     def thread(*messages, &dsl_block) = Thread.new(*messages, client: self, &dsl_block)
 
-    memoize def users = Users.new(slack_client:)
+    memoize def users = Users.new(client: self)
 
-    memoize def groups = Groups.new(slack_client:)
+    memoize def groups = Groups.new(client: self)
   end
 end

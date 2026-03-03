@@ -2,8 +2,8 @@ module SlackLine
   class Users
     include Memoization
 
-    def initialize(slack_client:)
-      @slack_client = slack_client
+    def initialize(client:)
+      @client = client
     end
 
     memoize def all = all_users.reject(&:deleted).reject(&:is_bot)
@@ -14,7 +14,9 @@ module SlackLine
 
     private
 
-    attr_reader :slack_client
+    attr_reader :client
+
+    def slack_client = client.slack_client
 
     def fetch_page(cursor: nil)
       params = {limit: 200}
