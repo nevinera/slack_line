@@ -1,6 +1,7 @@
 RSpec.describe SlackLine::Users do
+  let(:configuration) { instance_double(SlackLine::Configuration, cache_path: nil) }
   let(:slack_client) { instance_double(Slack::Web::Client) }
-  let(:client) { instance_double(SlackLine::Client, slack_client:) }
+  let(:client) { instance_double(SlackLine::Client, slack_client:, configuration:) }
   subject(:users) { described_class.new(client:) }
 
   before { allow(slack_client).to receive(:users_list).and_return(response_one, response_two) }

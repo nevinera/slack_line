@@ -1,12 +1,15 @@
 module SlackLine
   class Users
     include Memoization
+    include DiskCaching
 
     def initialize(client:)
       @client = client
     end
 
-    memoize def all = all_users.reject(&:deleted).reject(&:is_bot)
+    memoize def all
+      cached(config: client.configuration, key: "users_all") { all_users.reject(&:deleted).reject(&:is_bot) }
+    end
 
     def find(display_name:)
       users_by_display_name[display_name.downcase]
