@@ -1,12 +1,15 @@
 module SlackLine
   class Groups
     include Memoization
+    include DiskCaching
 
-    def initialize(slack_client:)
-      @slack_client = slack_client
+    def initialize(client:)
+      @client = client
     end
 
-    memoize def all = fetch_groups
+    memoize def all
+      cached(config: client.configuration, key: "groups_all") { fetch_groups }
+    end
 
     def find(handle:)
       groups_by_handle[handle.downcase]
@@ -14,7 +17,9 @@ module SlackLine
 
     private
 
-    attr_reader :slack_client
+    attr_reader :client
+
+    def slack_client = client.slack_client
 
     memoize def fetch_groups
       slack_client.usergroups_list.usergroups || []

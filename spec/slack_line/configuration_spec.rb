@@ -8,7 +8,9 @@ RSpec.describe SlackLine::Configuration do
     "SLACK_LINE_DEFAULT_CHANNEL",
     "SLACK_LINE_PER_MESSAGE_DELAY",
     "SLACK_LINE_PER_THREAD_DELAY",
-    "SLACK_LINE_NO_BACKOFF"
+    "SLACK_LINE_NO_BACKOFF",
+    "SLACK_LINE_CACHE_PATH",
+    "SLACK_LINE_CACHE_DURATION"
   )
 
   let(:base_config) { nil }
@@ -25,6 +27,8 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.per_message_delay).to be_within(0.001).of(0.0)
       expect(configuration.per_thread_delay).to be_within(0.001).of(0.0)
       expect(configuration.backoff).to be true
+      expect(configuration.cache_path).to be_nil
+      expect(configuration.cache_duration).to eq(900)
     end
   end
 
@@ -37,7 +41,9 @@ RSpec.describe SlackLine::Configuration do
         default_channel: "#base-channel",
         per_message_delay: 1.0,
         per_thread_delay: 2.0,
-        backoff: false
+        backoff: false,
+        cache_path: "/tmp/cache",
+        cache_duration: "5m"
       )
     end
 
@@ -49,6 +55,8 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.per_message_delay).to be_within(0.001).of(1.0)
       expect(configuration.per_thread_delay).to be_within(0.001).of(2.0)
       expect(configuration.backoff).to be false
+      expect(configuration.cache_path).to eq("/tmp/cache")
+      expect(configuration.cache_duration).to eq(300)
     end
 
     context "AND overrides" do
@@ -75,7 +83,9 @@ RSpec.describe SlackLine::Configuration do
         default_channel: "#override-channel",
         per_message_delay: 0.5,
         per_thread_delay: 1.5,
-        backoff: false
+        backoff: false,
+        cache_path: "/tmp/override_cache",
+        cache_duration: "1m"
       }
     end
 
@@ -87,6 +97,8 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.per_message_delay).to be_within(0.001).of(0.5)
       expect(configuration.per_thread_delay).to be_within(0.001).of(1.5)
       expect(configuration.backoff).to be false
+      expect(configuration.cache_path).to eq("/tmp/override_cache")
+      expect(configuration.cache_duration).to eq(60)
     end
   end
 
@@ -138,6 +150,41 @@ RSpec.describe SlackLine::Configuration do
 
     it "leaves backoff enabled" do
       expect(configuration.backoff).to be true
+    end
+  end
+
+  context "when SLACK_LINE_CACHE_PATH is set" do
+    with_env("SLACK_LINE_CACHE_PATH" => "/tmp/slack_cache")
+
+    it "uses the env var as the cache path" do
+      expect(configuration.cache_path).to eq("/tmp/slack_cache")
+    end
+  end
+
+  context "when SLACK_LINE_CACHE_DURATION is set" do
+    def self.it_parses_duration(input, as:)
+      context "to #{input.inspect}" do
+        with_env("SLACK_LINE_CACHE_DURATION" => input)
+
+        it "parses it as #{as} seconds" do
+          expect(configuration.cache_duration).to eq(as)
+        end
+      end
+    end
+
+    it_parses_duration "1800", as: 1800
+    it_parses_duration "90s", as: 90
+    it_parses_duration "15m", as: 900
+    it_parses_duration "2h", as: 7200
+    it_parses_duration "1d", as: 86400
+
+    context "to an invalid value" do
+      with_env("SLACK_LINE_CACHE_DURATION" => "15minutes")
+
+      it "raises Configuration::InvalidValue" do
+        expect { configuration.cache_duration }
+          .to raise_error(SlackLine::Configuration::InvalidValue)
+      end
     end
   end
 end

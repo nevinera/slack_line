@@ -1,11 +1,18 @@
 module SlackLine
   class Configuration
+    include Memoization
+
+    InvalidValue = Class.new(Error)
+
     attr_accessor :slack_token,
       :look_up_users, :bot_name, :default_channel,
       :per_message_delay, :per_thread_delay,
-      :backoff
+      :backoff, :cache_path
+    attr_writer :cache_duration
 
     alias_method :look_up_users?, :look_up_users
+
+    memoize def cache_duration = parse_duration(@cache_duration.to_s)
 
     DEFAULTS = {
       slack_token: nil,
@@ -14,7 +21,9 @@ module SlackLine
       default_channel: nil,
       per_message_delay: 0.0,
       per_thread_delay: 0.0,
-      backoff: true
+      backoff: true,
+      cache_path: nil,
+      cache_duration: "15m"
     }.freeze
 
     def initialize(base_config = nil, **overrides)
@@ -28,6 +37,8 @@ module SlackLine
       @per_message_delay = cascade(:per_message_delay, "SLACK_LINE_PER_MESSAGE_DELAY", :float)
       @per_thread_delay = cascade(:per_thread_delay, "SLACK_LINE_PER_THREAD_DELAY", :float)
       @backoff = cascade(:backoff, "SLACK_LINE_NO_BACKOFF", :inverse_boolean)
+      @cache_path = cascade(:cache_path, "SLACK_LINE_CACHE_PATH", :string)
+      @cache_duration = cascade(:cache_duration, "SLACK_LINE_CACHE_DURATION", :string)
     end
 
     private
@@ -56,6 +67,16 @@ module SlackLine
       else
         value
       end
+    end
+
+    DURATION_MULTIPLIERS = {s: 1, m: 60, h: 3600, d: 86400}.freeze
+
+    def parse_duration(value)
+      match = value.match(/\A(\d+)([smhd])?\z/)
+      raise(InvalidValue, "Invalid duration: #{value.inspect}") unless match
+
+      digits, unit = match.captures
+      digits.to_i * DURATION_MULTIPLIERS.fetch(unit&.to_sym, 1)
     end
   end
 end
