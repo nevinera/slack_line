@@ -80,6 +80,18 @@ be set via ENV or `SlackLine.configure`:
 * `per_thread_delay` or `SLACK_LINE_PER_THREAD_DELAY` is a float as
   well - SlackLine will `sleep` for this duration after each _thread_
   is posted, and after each non-thread message is posted.
+* `cache_path` or `SLACK_LINE_CACHE_PATH` - a directory path for
+  disk-caching the users and groups lists fetched from the Slack API.
+  When set, SlackLine will use the [lightly](https://github.com/DannyBen/lightly)
+  gem to cache results to disk, which avoids redundant API calls across
+  separate runs. Requires `lightly` to be installed as an optional
+  dependency - if it is not available, a `DiskCaching::NoLightly` error
+  will be raised at runtime.
+* `cache_duration` or `SLACK_LINE_CACHE_DURATION` - how long cached
+  data remains valid (default `"15m"`). Accepts a plain integer number
+  of seconds, or a number followed by a unit suffix: `s` (seconds),
+  `m` (minutes), `h` (hours), or `d` (days). For example: `"30m"`,
+  `"2h"`, `"1d"`, or `"900"`.
 
 You can just set those via the environment variables, but you can also
 set them on the singleton configuration object:
@@ -92,6 +104,8 @@ SlackLine.configure do |config|
   config.default_channel = "#ci-flow"
   config.per_message_delay = 0.2
   config.per_thread_delay = 2.0
+  config.cache_path = "/tmp/slack_line_cache"
+  config.cache_duration = "1h"
 end
 ```
 
