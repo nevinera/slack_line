@@ -86,6 +86,26 @@ RSpec.describe SlackLine::Cli::SlackLineThread do
     end
   end
 
+  describe "when DiskCaching::NoLightly is raised" do
+    let(:argv) { %w[--slack-token fake-token Hello] }
+
+    before { allow(cli).to receive(:run_preview).and_raise(SlackLine::DiskCaching::NoLightly, "lightly gem required") }
+
+    it "raises ExitException" do
+      expect { cli.run }.to raise_error(SlackLine::Cli::ExitException, "lightly gem required")
+    end
+  end
+
+  describe "when Configuration::InvalidValue is raised" do
+    let(:argv) { %w[--slack-token fake-token Hello] }
+
+    before { allow(cli).to receive(:run_preview).and_raise(SlackLine::Configuration::InvalidValue, "invalid duration") }
+
+    it "raises ExitException" do
+      expect { cli.run }.to raise_error(SlackLine::Cli::ExitException, "invalid duration")
+    end
+  end
+
   describe "with --cache-duration" do
     let(:argv) { %w[--slack-token fake-token --cache-duration 30m Hello] }
 

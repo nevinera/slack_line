@@ -20,6 +20,8 @@ module SlackLine
         else
           run_preview
         end
+      rescue DiskCaching::NoLightly, Configuration::InvalidValue => e
+        raise ExitException, e.message
       end
 
       def options
