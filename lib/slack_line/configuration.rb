@@ -69,14 +69,14 @@ module SlackLine
       end
     end
 
-    DURATION_MULTIPLIERS = {"s" => 1, "m" => 60, "h" => 3600, "d" => 86400}.freeze
+    DURATION_MULTIPLIERS = {s: 1, m: 60, h: 3600, d: 86400}.freeze
 
     def parse_duration(value)
       match = value.match(/\A(\d+)([smhd])?\z/)
       raise(InvalidValue, "Invalid duration: #{value.inspect}") unless match
 
       digits, unit = match.captures
-      digits.to_i * (DURATION_MULTIPLIERS[unit] || 1)
+      digits.to_i * DURATION_MULTIPLIERS.fetch(unit&.to_sym, 1)
     end
   end
 end
