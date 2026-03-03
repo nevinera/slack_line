@@ -1,3 +1,9 @@
+begin
+  require "lightly"
+rescue LoadError
+  # optional dependency
+end
+
 module SlackLine
   module DiskCaching
     NoLightly = Class.new(Error)

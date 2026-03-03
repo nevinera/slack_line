@@ -21,6 +21,8 @@ RSpec.describe SlackLine::DiskCaching do
 
     context "when config.cache_path is provided" do
       context "and Lightly is not defined" do
+        before { hide_const("Lightly") }
+
         it "raises DiskCaching::NoLightly" do
           expect { instance.cached(config: config(cache_path: "/tmp/cache"), key: "test") { "value" } }
             .to raise_error(SlackLine::DiskCaching::NoLightly)
