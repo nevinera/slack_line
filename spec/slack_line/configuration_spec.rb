@@ -8,7 +8,8 @@ RSpec.describe SlackLine::Configuration do
     "SLACK_LINE_DEFAULT_CHANNEL",
     "SLACK_LINE_PER_MESSAGE_DELAY",
     "SLACK_LINE_PER_THREAD_DELAY",
-    "SLACK_LINE_NO_BACKOFF"
+    "SLACK_LINE_NO_BACKOFF",
+    "SLACK_LINE_CACHE_PATH"
   )
 
   let(:base_config) { nil }
@@ -25,6 +26,7 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.per_message_delay).to be_within(0.001).of(0.0)
       expect(configuration.per_thread_delay).to be_within(0.001).of(0.0)
       expect(configuration.backoff).to be true
+      expect(configuration.cache_path).to be_nil
     end
   end
 
@@ -37,7 +39,8 @@ RSpec.describe SlackLine::Configuration do
         default_channel: "#base-channel",
         per_message_delay: 1.0,
         per_thread_delay: 2.0,
-        backoff: false
+        backoff: false,
+        cache_path: "/tmp/cache"
       )
     end
 
@@ -49,6 +52,7 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.per_message_delay).to be_within(0.001).of(1.0)
       expect(configuration.per_thread_delay).to be_within(0.001).of(2.0)
       expect(configuration.backoff).to be false
+      expect(configuration.cache_path).to eq("/tmp/cache")
     end
 
     context "AND overrides" do
@@ -75,7 +79,8 @@ RSpec.describe SlackLine::Configuration do
         default_channel: "#override-channel",
         per_message_delay: 0.5,
         per_thread_delay: 1.5,
-        backoff: false
+        backoff: false,
+        cache_path: "/tmp/override_cache"
       }
     end
 
@@ -87,6 +92,7 @@ RSpec.describe SlackLine::Configuration do
       expect(configuration.per_message_delay).to be_within(0.001).of(0.5)
       expect(configuration.per_thread_delay).to be_within(0.001).of(1.5)
       expect(configuration.backoff).to be false
+      expect(configuration.cache_path).to eq("/tmp/override_cache")
     end
   end
 
@@ -138,6 +144,14 @@ RSpec.describe SlackLine::Configuration do
 
     it "leaves backoff enabled" do
       expect(configuration.backoff).to be true
+    end
+  end
+
+  context "when SLACK_LINE_CACHE_PATH is set" do
+    with_env("SLACK_LINE_CACHE_PATH" => "/tmp/slack_cache")
+
+    it "uses the env var as the cache path" do
+      expect(configuration.cache_path).to eq("/tmp/slack_cache")
     end
   end
 end

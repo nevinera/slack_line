@@ -3,7 +3,7 @@ module SlackLine
     attr_accessor :slack_token,
       :look_up_users, :bot_name, :default_channel,
       :per_message_delay, :per_thread_delay,
-      :backoff
+      :backoff, :cache_path
 
     alias_method :look_up_users?, :look_up_users
 
@@ -14,7 +14,8 @@ module SlackLine
       default_channel: nil,
       per_message_delay: 0.0,
       per_thread_delay: 0.0,
-      backoff: true
+      backoff: true,
+      cache_path: nil
     }.freeze
 
     def initialize(base_config = nil, **overrides)
@@ -28,6 +29,7 @@ module SlackLine
       @per_message_delay = cascade(:per_message_delay, "SLACK_LINE_PER_MESSAGE_DELAY", :float)
       @per_thread_delay = cascade(:per_thread_delay, "SLACK_LINE_PER_THREAD_DELAY", :float)
       @backoff = cascade(:backoff, "SLACK_LINE_NO_BACKOFF", :inverse_boolean)
+      @cache_path = cascade(:cache_path, "SLACK_LINE_CACHE_PATH", :string)
     end
 
     private
