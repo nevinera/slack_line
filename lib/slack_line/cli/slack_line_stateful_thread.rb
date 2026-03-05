@@ -22,7 +22,7 @@ module SlackLine
 
       def options
         return @options if defined?(@options)
-        opts = {path: nil, post_to: nil, state: nil, message: nil, slack_token: nil, bot_name: nil}
+        opts = {path: nil, post_to: nil, state: nil, message: nil, thread: nil, slack_token: nil, bot_name: nil}
         option_parser(opts).parse(@argv.dup)
         @options = opts
       end
@@ -45,6 +45,7 @@ module SlackLine
           parser.on("-p", "--post-to TARGET") { |t| opts[:post_to] = t }
           parser.on("-s", "--state STATE") { |s| opts[:state] = s }
           parser.on("-m", "--message MESSAGE") { |m| opts[:message] = m }
+          parser.on("--thread") { opts[:thread] = true }
         end
       end
 
@@ -61,6 +62,15 @@ module SlackLine
 
       def validate_subsequent_options!
         raise ExitException, "--post-to cannot be used after initial post" if options[:post_to]
+        options[:thread] ? validate_thread_options! : validate_update_options!
+      end
+
+      def validate_thread_options!
+        raise ExitException, "--thread cannot be used with --state" if options[:state]
+        raise ExitException, "--thread requires --message" unless options[:message]
+      end
+
+      def validate_update_options!
         if options[:state] && options[:message]
           raise ExitException, "Only one of --state or --message can be used at a time"
         end
@@ -85,7 +95,13 @@ module SlackLine
       end
 
       def run_subsequent
-        options[:state] ? run_update_state : run_append_message
+        if options[:state]
+          run_update_state
+        elsif options[:thread]
+          run_thread_message
+        else
+          run_append_message
+        end
       end
 
       def extract_body(sent)
@@ -101,6 +117,13 @@ module SlackLine
         updated = sent.update(Message.new(new_text, client:))
         save_sent(updated)
         stderr.puts "Updated state in #{updated.channel}"
+      end
+
+      def run_thread_message
+        sent = load_sent
+        sent_thread = sent.append(options[:message])
+        save_sent(sent_thread)
+        stderr.puts "Threaded message in #{sent_thread.channel}"
       end
 
       def run_append_message

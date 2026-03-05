@@ -85,6 +85,22 @@ RSpec.describe SlackLine::Cli::SlackLineStatefulThread do
           expect { cli.run }.to raise_error(SlackLine::Cli::ExitException, /One of --state or --message is required/)
         end
       end
+
+      context "when --thread is given with --state" do
+        let(:argv) { %w[--slack-token fake --path /tmp/thread.json --thread --state deploying --message hello] }
+
+        it "raises ExitException" do
+          expect { cli.run }.to raise_error(SlackLine::Cli::ExitException, /--thread cannot be used with --state/)
+        end
+      end
+
+      context "when --thread is given without --message" do
+        let(:argv) { %w[--slack-token fake --path /tmp/thread.json --thread] }
+
+        it "raises ExitException" do
+          expect { cli.run }.to raise_error(SlackLine::Cli::ExitException, /--thread requires --message/)
+        end
+      end
     end
   end
 
@@ -178,6 +194,68 @@ RSpec.describe SlackLine::Cli::SlackLineStatefulThread do
     it "reports to stderr" do
       cli.run
       expect(stderr.string).to include("C12345678")
+    end
+  end
+
+  describe "subsequent --thread --message (file exists)" do
+    let(:argv) { %w[--slack-token fake --path /tmp/thread.json --thread --message Pipeline\ complete] }
+
+    before do
+      allow(File).to receive(:exist?).with("/tmp/thread.json").and_return(true)
+      allow(File).to receive(:read).with("/tmp/thread.json").and_return(persisted_message_json)
+      allow(File).to receive(:write)
+      allow(slack_client).to receive(:chat_postMessage).and_return(reply_response)
+    end
+
+    it "posts a reply into the thread" do
+      cli.run
+      expect(slack_client).to have_received(:chat_postMessage).with(
+        channel: "C12345678",
+        blocks: [{type: "section", text: {type: "mrkdwn", text: "Pipeline complete"}}],
+        thread_ts: "111.000001",
+        username: nil
+      )
+    end
+
+    it "saves the resulting SentThread JSON to the path" do
+      cli.run
+      expect(File).to have_received(:write).with("/tmp/thread.json", include('"type": "thread"'))
+    end
+
+    it "reports to stderr" do
+      cli.run
+      expect(stderr.string).to include("C12345678")
+    end
+
+    context "when the file already contains a SentThread" do
+      let(:persisted_thread_json) do
+        JSON.generate(
+          type: "thread",
+          messages: [
+            {type: "message", ts: "111.000001", channel: "C12345678", thread_ts: nil,
+             content: [{"type" => "section", "text" => {"type" => "mrkdwn", "text" => "[:building:] Start"}}], priorly: nil},
+            {type: "message", ts: "111.000002", channel: "C12345678", thread_ts: "111.000001",
+             content: [{"type" => "section", "text" => {"type" => "mrkdwn", "text" => "First reply"}}], priorly: nil}
+          ]
+        )
+      end
+
+      before { allow(File).to receive(:read).with("/tmp/thread.json").and_return(persisted_thread_json) }
+
+      it "appends to the existing thread" do
+        cli.run
+        expect(slack_client).to have_received(:chat_postMessage).with(
+          channel: "C12345678",
+          blocks: anything,
+          thread_ts: "111.000001",
+          username: nil
+        )
+      end
+
+      it "saves the updated SentThread JSON to the path" do
+        cli.run
+        expect(File).to have_received(:write).with("/tmp/thread.json", include('"type": "thread"'))
+      end
     end
   end
 
