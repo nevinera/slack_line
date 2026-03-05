@@ -70,14 +70,6 @@ RSpec.describe SlackLine::Cli::SlackLineStatefulThread do
         end
       end
 
-      context "when both --state and --message are given" do
-        let(:argv) { %w[--slack-token fake --path /tmp/thread.json --state deploying --message hello] }
-
-        it "raises ExitException" do
-          expect { cli.run }.to raise_error(SlackLine::Cli::ExitException, /Only one of --state or --message/)
-        end
-      end
-
       context "when neither --state nor --message is given" do
         let(:argv) { %w[--slack-token fake --path /tmp/thread.json] }
 
@@ -166,34 +158,56 @@ RSpec.describe SlackLine::Cli::SlackLineStatefulThread do
     end
   end
 
-  describe "subsequent --message append (file exists)" do
+  describe "subsequent --message update (file exists)" do
     let(:argv) { %w[--slack-token fake --path /tmp/thread.json --message Pipeline\ complete] }
 
     before do
       allow(File).to receive(:exist?).with("/tmp/thread.json").and_return(true)
       allow(File).to receive(:read).with("/tmp/thread.json").and_return(persisted_message_json)
-      allow(slack_client).to receive(:chat_postMessage).and_return(reply_response)
+      allow(File).to receive(:write)
+      allow(slack_client).to receive(:chat_update).and_return(updated_response)
     end
 
-    it "posts a reply into the thread" do
+    it "updates the initial message with the new body and preserved state" do
       cli.run
-      expect(slack_client).to have_received(:chat_postMessage).with(
-        channel: "C12345678",
-        blocks: [{type: "section", text: {type: "mrkdwn", text: "Pipeline complete"}}],
-        thread_ts: "111.000001",
-        username: nil
+      expect(slack_client).to have_received(:chat_update).with(
+        channel: "C12345678", ts: "111.000001",
+        blocks: [{type: "section", text: {type: "mrkdwn", text: "[:hammer_and_wrench: Building] Pipeline complete"}}]
       )
     end
 
-    it "does not update the path file" do
-      allow(File).to receive(:write)
+    it "saves the updated SentMessage JSON to the path" do
       cli.run
-      expect(File).not_to have_received(:write)
+      expect(File).to have_received(:write).with("/tmp/thread.json", include('"type": "message"'))
     end
 
     it "reports to stderr" do
       cli.run
       expect(stderr.string).to include("C12345678")
+    end
+  end
+
+  describe "subsequent --state and --message together (file exists)" do
+    let(:argv) { %w[--slack-token fake --path /tmp/thread.json --state :rocket:\ Deploying --message Pipeline\ complete] }
+
+    before do
+      allow(File).to receive(:exist?).with("/tmp/thread.json").and_return(true)
+      allow(File).to receive(:read).with("/tmp/thread.json").and_return(persisted_message_json)
+      allow(File).to receive(:write)
+      allow(slack_client).to receive(:chat_update).and_return(updated_response)
+    end
+
+    it "updates the initial message with both the new state and new body" do
+      cli.run
+      expect(slack_client).to have_received(:chat_update).with(
+        channel: "C12345678", ts: "111.000001",
+        blocks: [{type: "section", text: {type: "mrkdwn", text: "[:rocket: Deploying] Pipeline complete"}}]
+      )
+    end
+
+    it "saves the updated SentMessage JSON to the path" do
+      cli.run
+      expect(File).to have_received(:write).with("/tmp/thread.json", include('"type": "message"'))
     end
   end
 

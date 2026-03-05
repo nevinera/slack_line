@@ -71,9 +71,6 @@ module SlackLine
       end
 
       def validate_update_options!
-        if options[:state] && options[:message]
-          raise ExitException, "Only one of --state or --message can be used at a time"
-        end
         raise ExitException, "One of --state or --message is required" unless options[:state] || options[:message]
       end
 
@@ -95,28 +92,26 @@ module SlackLine
       end
 
       def run_subsequent
-        if options[:state]
-          run_update_state
-        elsif options[:thread]
-          run_thread_message
-        else
-          run_append_message
-        end
+        options[:thread] ? run_thread_message : run_update_message
       end
 
-      def extract_body(sent)
-        text = sent.content.dig(0, "text", "text")
-        match = text&.match(/\A\[[^\]]*\] (.+)\z/m)
-        raise ExitException, "Cannot parse body from stored message content" unless match
-        match[1]
+      def parse_state_message(text)
+        match = text&.match(/\A\[([^\]]*)\] (.+)\z/m)
+        raise ExitException, "Cannot parse state and body from stored message content" unless match
+        [match[1], match[2]]
       end
 
-      def run_update_state
+      def current_state_and_body(sent)
+        parse_state_message(sent.content.dig(0, "text", "text"))
+      end
+
+      def run_update_message
         sent = load_sent
-        new_text = "[#{options[:state]}] #{extract_body(sent)}"
+        current_state, current_body = current_state_and_body(sent)
+        new_text = "[#{options[:state] || current_state}] #{options[:message] || current_body}"
         updated = sent.update(Message.new(new_text, client:))
         save_sent(updated)
-        stderr.puts "Updated state in #{updated.channel}"
+        stderr.puts "Updated message in #{updated.channel}"
       end
 
       def run_thread_message
@@ -124,12 +119,6 @@ module SlackLine
         sent_thread = sent.append(options[:message])
         save_sent(sent_thread)
         stderr.puts "Threaded message in #{sent_thread.channel}"
-      end
-
-      def run_append_message
-        sent = load_sent
-        sent_thread = sent.append(options[:message])
-        stderr.puts "Appended message to thread in #{sent_thread.channel}"
       end
     end
   end

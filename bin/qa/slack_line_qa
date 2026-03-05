@@ -241,7 +241,7 @@ Dir.mktmpdir("slack_line_qa") do |tmpdir|
   end
 
   group "slack_line_stateful_thread: --state update" do
-    step "updates the state segment of the initial message" do
+    step "updates the state segment of the initial message and saves" do
       result = run_script(STATEFUL_THREAD_SCRIPT,
         "--path", stateful_thread_path,
         "-s", ":rocket: Deploying")
@@ -253,15 +253,15 @@ Dir.mktmpdir("slack_line_qa") do |tmpdir|
     end
   end
 
-  group "slack_line_stateful_thread: --message append (no file update)" do
-    step "posts a reply and leaves the path file unchanged" do
-      mtime_before = File.mtime(stateful_thread_path)
+  group "slack_line_stateful_thread: --message update" do
+    step "updates the body segment of the initial message and saves" do
       result = run_script(STATEFUL_THREAD_SCRIPT,
         "--path", stateful_thread_path,
-        "-m", "QA stateful thread [##{public_channel}]: --message reply (file should be unchanged)")
+        "-m", "QA stateful thread [##{public_channel}]: --message updated body")
       assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
-      assert result.stderr.match?(/[Aa]ppended/), "stderr did not confirm append: #{result.stderr.strip}"
-      assert File.mtime(stateful_thread_path) == mtime_before, "path file was modified by --message"
+      assert result.stderr.match?(/[Uu]pdated/), "stderr did not confirm update: #{result.stderr.strip}"
+      saved = rescued { JSON.parse(File.read(stateful_thread_path)) }
+      assert saved["type"] == "message", "path file should still be a message after --message update"
     end
   end
 
