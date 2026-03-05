@@ -17,6 +17,7 @@ abort "SLACK_LINE_SLACK_TOKEN is required" unless ENV["SLACK_LINE_SLACK_TOKEN"]
 
 MESSAGE_SCRIPT = File.expand_path("../slack_line_message", __dir__)
 THREAD_SCRIPT = File.expand_path("../slack_line_thread", __dir__)
+STATEFUL_THREAD_SCRIPT = File.expand_path("../slack_line_stateful_thread", __dir__)
 
 ScriptResult = Struct.new(:stdout, :stderr, :exit_status, keyword_init: true) do
   def success? = exit_status.zero?
@@ -73,6 +74,7 @@ Dir.mktmpdir("slack_line_qa") do |tmpdir|
   msg2_path = File.join(tmpdir, "msg2.json")
   msg3_path = File.join(tmpdir, "msg3.json")
   thread2_path = File.join(tmpdir, "thread2.json")
+  stateful_thread_path = File.join(tmpdir, "stateful_thread.json")
 
   # ---- slack_line_message ----
 
@@ -217,6 +219,99 @@ Dir.mktmpdir("slack_line_qa") do |tmpdir|
         "QA thread [1/1 in ##{private_channel}]: Simple thread — message 2 of 2")
       assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
       assert result.stderr.include?(private_channel), "stderr did not mention channel: #{result.stderr.strip}"
+    end
+  end
+
+  # ---- slack_line_stateful_thread ----
+
+  group "slack_line_stateful_thread: initial post to ##{public_channel}" do
+    step "posts and saves SentMessage JSON to disk" do
+      result = run_script(STATEFUL_THREAD_SCRIPT,
+        "--path", stateful_thread_path,
+        "-p", public_channel,
+        "-s", ":hammer_and_wrench: Building",
+        "-m", "QA stateful thread [##{public_channel}]: initial post (state updates and replies expected below)")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.include?(public_channel), "stderr did not mention channel: #{result.stderr.strip}"
+      assert File.exist?(stateful_thread_path), "--path did not create file at #{stateful_thread_path}"
+      saved = rescued { JSON.parse(File.read(stateful_thread_path)) }
+      assert saved, "saved file is not valid JSON"
+      assert saved["type"] == "message", "saved JSON has wrong type: #{saved["type"].inspect}"
+    end
+  end
+
+  group "slack_line_stateful_thread: --state update" do
+    step "updates the state segment of the initial message" do
+      result = run_script(STATEFUL_THREAD_SCRIPT,
+        "--path", stateful_thread_path,
+        "-s", ":rocket: Deploying")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.match?(/[Uu]pdated/), "stderr did not confirm update: #{result.stderr.strip}"
+      assert result.stderr.include?(public_channel), "stderr did not mention channel: #{result.stderr.strip}"
+      saved = rescued { JSON.parse(File.read(stateful_thread_path)) }
+      assert saved["type"] == "message", "path file should still be a message after state update"
+    end
+  end
+
+  group "slack_line_stateful_thread: --message append (no file update)" do
+    step "posts a reply and leaves the path file unchanged" do
+      mtime_before = File.mtime(stateful_thread_path)
+      result = run_script(STATEFUL_THREAD_SCRIPT,
+        "--path", stateful_thread_path,
+        "-m", "QA stateful thread [##{public_channel}]: --message reply (file should be unchanged)")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.match?(/[Aa]ppended/), "stderr did not confirm append: #{result.stderr.strip}"
+      assert File.mtime(stateful_thread_path) == mtime_before, "path file was modified by --message"
+    end
+  end
+
+  group "slack_line_stateful_thread: --thread reply (saves SentThread to path)" do
+    step "posts a reply and updates path file to a SentThread" do
+      result = run_script(STATEFUL_THREAD_SCRIPT,
+        "--path", stateful_thread_path,
+        "--thread",
+        "-m", "QA stateful thread [##{public_channel}]: --thread reply (file should become a thread)")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.match?(/[Tt]hreaded/), "stderr did not confirm thread: #{result.stderr.strip}"
+      saved = rescued { JSON.parse(File.read(stateful_thread_path)) }
+      assert saved, "saved file is not valid JSON"
+      assert saved["type"] == "thread", "path file should be a thread after --thread: #{saved["type"].inspect}"
+      assert saved["messages"].size == 2, "expected 2 messages in saved thread, got #{saved["messages"].size}"
+    end
+
+    step "can append a second --thread reply onto the saved SentThread" do
+      result = run_script(STATEFUL_THREAD_SCRIPT,
+        "--path", stateful_thread_path,
+        "--thread",
+        "-m", "QA stateful thread [##{public_channel}]: second --thread reply")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      saved = rescued { JSON.parse(File.read(stateful_thread_path)) }
+      assert saved["type"] == "thread", "path file should still be a thread"
+      assert saved["messages"].size == 3, "expected 3 messages in saved thread, got #{saved["messages"].size}"
+    end
+  end
+
+  group "slack_line_stateful_thread: error handling" do
+    step "missing --path exits nonzero with helpful error" do
+      result = run_script(STATEFUL_THREAD_SCRIPT, "-p", public_channel, "-s", "s", "-m", "m")
+      assert result.failure?, "expected nonzero exit, got 0"
+      assert result.stderr.match?(/--path/i), "error not helpful: #{result.stderr.strip}"
+    end
+
+    step "initial post missing --state exits nonzero with helpful error" do
+      result = run_script(STATEFUL_THREAD_SCRIPT,
+        "--path", File.join(tmpdir, "nonexistent.json"),
+        "-p", public_channel, "-m", "m")
+      assert result.failure?, "expected nonzero exit, got 0"
+      assert result.stderr.match?(/--state/i), "error not helpful: #{result.stderr.strip}"
+    end
+
+    step "--thread with --state exits nonzero with helpful error" do
+      result = run_script(STATEFUL_THREAD_SCRIPT,
+        "--path", stateful_thread_path,
+        "--thread", "-s", "s", "-m", "m")
+      assert result.failure?, "expected nonzero exit, got 0"
+      assert result.stderr.match?(/--thread|--state/i), "error not helpful: #{result.stderr.strip}"
     end
   end
 
