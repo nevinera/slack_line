@@ -291,6 +291,30 @@ Dir.mktmpdir("slack_line_qa") do |tmpdir|
     end
   end
 
+  group "slack_line_stateful_thread: --state/--message update after --thread reply" do
+    step "updates the root message state while file remains a SentThread" do
+      result = run_script(STATEFUL_THREAD_SCRIPT,
+        "--path", stateful_thread_path,
+        "-s", ":white_check_mark: Complete")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.match?(/[Uu]pdated/), "stderr did not confirm update: #{result.stderr.strip}"
+      saved = rescued { JSON.parse(File.read(stateful_thread_path)) }
+      assert saved["type"] == "thread", "path file should still be a thread after state update: #{saved["type"].inspect}"
+      assert saved["messages"].size == 3, "expected 3 messages in saved thread, got #{saved["messages"].size}"
+    end
+
+    step "updates the root message body while file remains a SentThread" do
+      result = run_script(STATEFUL_THREAD_SCRIPT,
+        "--path", stateful_thread_path,
+        "-m", "QA stateful thread [##{public_channel}]: body updated after threading")
+      assert result.success?, "exit #{result.exit_status} — #{result.stderr.strip}"
+      assert result.stderr.match?(/[Uu]pdated/), "stderr did not confirm update: #{result.stderr.strip}"
+      saved = rescued { JSON.parse(File.read(stateful_thread_path)) }
+      assert saved["type"] == "thread", "path file should still be a thread after message update: #{saved["type"].inspect}"
+      assert saved["messages"].size == 3, "expected 3 messages in saved thread, got #{saved["messages"].size}"
+    end
+  end
+
   group "slack_line_stateful_thread: error handling" do
     step "missing --path exits nonzero with helpful error" do
       result = run_script(STATEFUL_THREAD_SCRIPT, "-p", public_channel, "-s", "s", "-m", "m")

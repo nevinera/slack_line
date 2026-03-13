@@ -19,6 +19,18 @@ RSpec.describe SlackLine::Cli::SlackLineStatefulThread do
     )
   end
 
+  let(:persisted_thread_json) do
+    JSON.generate(
+      type: "thread",
+      messages: [
+        {type: "message", ts: "111.000001", channel: "C12345678", thread_ts: nil, priorly: nil,
+         content: [{"type" => "section", "text" => {"type" => "mrkdwn", "text" => "[:hammer_and_wrench: Building] Deploy v1.2.3"}}]},
+        {type: "message", ts: "222.000001", channel: "C12345678", thread_ts: "111.000001", priorly: nil,
+         content: [{"type" => "section", "text" => {"type" => "mrkdwn", "text" => "First reply"}}]}
+      ]
+    )
+  end
+
   describe "validation" do
     context "when --path is not given" do
       let(:argv) { %w[--slack-token fake --post-to C12345678 --state building --message hello] }
@@ -156,6 +168,23 @@ RSpec.describe SlackLine::Cli::SlackLineStatefulThread do
       cli.run
       expect(stderr.string).to include("C12345678")
     end
+
+    context "when the file contains a SentThread" do
+      before { allow(File).to receive(:read).with("/tmp/thread.json").and_return(persisted_thread_json) }
+
+      it "updates the root message with the new state and preserved body" do
+        cli.run
+        expect(slack_client).to have_received(:chat_update).with(
+          channel: "C12345678", ts: "111.000001",
+          blocks: [{type: "section", text: {type: "mrkdwn", text: "[:rocket: Deploying] Deploy v1.2.3"}}]
+        )
+      end
+
+      it "saves the result as a SentThread" do
+        cli.run
+        expect(File).to have_received(:write).with("/tmp/thread.json", include('"type": "thread"'))
+      end
+    end
   end
 
   describe "subsequent --message update (file exists)" do
@@ -185,6 +214,23 @@ RSpec.describe SlackLine::Cli::SlackLineStatefulThread do
       cli.run
       expect(stderr.string).to include("C12345678")
     end
+
+    context "when the file contains a SentThread" do
+      before { allow(File).to receive(:read).with("/tmp/thread.json").and_return(persisted_thread_json) }
+
+      it "updates the root message with the new body and preserved state" do
+        cli.run
+        expect(slack_client).to have_received(:chat_update).with(
+          channel: "C12345678", ts: "111.000001",
+          blocks: [{type: "section", text: {type: "mrkdwn", text: "[:hammer_and_wrench: Building] Pipeline complete"}}]
+        )
+      end
+
+      it "saves the result as a SentThread" do
+        cli.run
+        expect(File).to have_received(:write).with("/tmp/thread.json", include('"type": "thread"'))
+      end
+    end
   end
 
   describe "subsequent --state and --message together (file exists)" do
@@ -208,6 +254,23 @@ RSpec.describe SlackLine::Cli::SlackLineStatefulThread do
     it "saves the updated SentMessage JSON to the path" do
       cli.run
       expect(File).to have_received(:write).with("/tmp/thread.json", include('"type": "message"'))
+    end
+
+    context "when the file contains a SentThread" do
+      before { allow(File).to receive(:read).with("/tmp/thread.json").and_return(persisted_thread_json) }
+
+      it "updates the root message with both the new state and new body" do
+        cli.run
+        expect(slack_client).to have_received(:chat_update).with(
+          channel: "C12345678", ts: "111.000001",
+          blocks: [{type: "section", text: {type: "mrkdwn", text: "[:rocket: Deploying] Pipeline complete"}}]
+        )
+      end
+
+      it "saves the result as a SentThread" do
+        cli.run
+        expect(File).to have_received(:write).with("/tmp/thread.json", include('"type": "thread"'))
+      end
     end
   end
 
