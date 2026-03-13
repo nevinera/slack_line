@@ -330,6 +330,14 @@ Dir.mktmpdir("slack_line_qa") do |tmpdir|
       assert result.stderr.match?(/--state/i), "error not helpful: #{result.stderr.strip}"
     end
 
+    step "--thread on initial post exits nonzero with helpful error" do
+      result = run_script(STATEFUL_THREAD_SCRIPT,
+        "--path", File.join(tmpdir, "fresh.json"),
+        "-p", public_channel, "-s", "s", "-m", "m", "--thread")
+      assert result.failure?, "expected nonzero exit, got 0"
+      assert result.stderr.match?(/--thread/i), "error not helpful: #{result.stderr.strip}"
+    end
+
     step "--thread with --state exits nonzero with helpful error" do
       result = run_script(STATEFUL_THREAD_SCRIPT,
         "--path", stateful_thread_path,

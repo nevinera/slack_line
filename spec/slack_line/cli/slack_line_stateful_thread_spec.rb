@@ -66,6 +66,14 @@ RSpec.describe SlackLine::Cli::SlackLineStatefulThread do
           expect { cli.run }.to raise_error(SlackLine::Cli::ExitException, /--message is required/)
         end
       end
+
+      context "when --thread is given" do
+        let(:argv) { %w[--slack-token fake --path /tmp/thread.json --post-to C12345678 --state building --message hello --thread] }
+
+        it "raises ExitException" do
+          expect { cli.run }.to raise_error(SlackLine::Cli::ExitException, /--thread cannot be used on initial post/)
+        end
+      end
     end
 
     context "for subsequent calls (file exists at path)" do

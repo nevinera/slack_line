@@ -55,6 +55,7 @@ module SlackLine
       end
 
       def validate_initial_options!
+        raise ExitException, "--thread cannot be used on initial post" if options[:thread]
         raise ExitException, "--post-to is required for initial post" unless options[:post_to]
         raise ExitException, "--state is required for initial post" unless options[:state]
         raise ExitException, "--message is required for initial post" unless options[:message]
