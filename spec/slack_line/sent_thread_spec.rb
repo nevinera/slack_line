@@ -1,5 +1,6 @@
 RSpec.describe SlackLine::SentThread do
-  let(:sent_message_one) { instance_double(SlackLine::SentMessage, channel: "C12345678", ts: "1234567890.123456") }
+  let(:root_content) { [{"type" => "section", "text" => {"type" => "mrkdwn", "text" => "root message"}}] }
+  let(:sent_message_one) { instance_double(SlackLine::SentMessage, channel: "C12345678", ts: "1234567890.123456", content: root_content) }
   let(:sent_message_two) { instance_double(SlackLine::SentMessage, channel: "C12345678", ts: "1234567891.654321") }
   let(:sent_message_tre) { instance_double(SlackLine::SentMessage, channel: "C12345678", ts: "1234567894.111111") }
   let(:sent_messages) { [sent_message_one, sent_message_two, sent_message_tre] }
@@ -8,6 +9,7 @@ RSpec.describe SlackLine::SentThread do
 
   it { is_expected.to have_attributes(messages: sent_messages, sent_messages:) }
   it { is_expected.to have_attributes(channel: "C12345678", ts: "1234567890.123456", thread_ts: "1234567890.123456") }
+  it { is_expected.to have_attributes(content: root_content) }
 
   it "behaves like an Enumerable" do
     expect(sent_thread.size).to eq(3)
@@ -83,47 +85,52 @@ RSpec.describe SlackLine::SentThread do
     end
   end
 
-  describe "#as_json" do
-    let(:msg_one_json) { {"type" => "message", "ts" => "1234567890.123456", "channel" => "C12345678", "thread_ts" => nil, "content" => [], "priorly" => nil} }
-    let(:msg_two_json) { {"type" => "message", "ts" => "1234567891.654321", "channel" => "C12345678", "thread_ts" => "1234567890.123456", "content" => [], "priorly" => nil} }
-    let(:msg_tre_json) { {"type" => "message", "ts" => "1234567894.111111", "channel" => "C12345678", "thread_ts" => "1234567890.123456", "content" => [], "priorly" => nil} }
+  describe "#update" do
+    let(:updated_root) { instance_double(SlackLine::SentMessage, channel: "C12345678", ts: "1234567890.123456") }
 
-    before do
-      allow(sent_message_one).to receive(:as_json).and_return(msg_one_json)
-      allow(sent_message_two).to receive(:as_json).and_return(msg_two_json)
-      allow(sent_message_tre).to receive(:as_json).and_return(msg_tre_json)
+    context "when updating with a string" do
+      before { allow(sent_message_one).to receive(:update).with("Updated text").and_return(updated_root) }
+      subject(:result) { sent_thread.update("Updated text") }
+
+      it "delegates to first.update" do
+        result
+        expect(sent_message_one).to have_received(:update).with("Updated text")
+      end
+
+      it "returns a SentThread with the updated root and all reply messages" do
+        expect(result).to be_a(SlackLine::SentThread)
+        expect(result.sent_messages).to eq([updated_root, sent_message_two, sent_message_tre])
+      end
     end
 
-    it "returns a hash with type 'thread' and serialized messages" do
-      expect(sent_thread.as_json).to eq(
-        "type" => "thread",
-        "messages" => [msg_one_json, msg_two_json, msg_tre_json]
-      )
-    end
-  end
+    context "when updating with a Message object" do
+      let(:client) { instance_double(SlackLine::Client) }
+      let(:message) { SlackLine::Message.new("Updated content", client:) }
+      before { allow(sent_message_one).to receive(:update).with(message).and_return(updated_root) }
+      subject(:result) { sent_thread.update(message) }
 
-  describe ".from_json" do
-    let(:client) { instance_double(SlackLine::Client) }
-    let(:data) do
-      {
-        "type" => "thread",
-        "messages" => [
-          {"type" => "message", "ts" => "1234567890.123456", "channel" => "C12345678", "thread_ts" => nil, "content" => [], "priorly" => nil},
-          {"type" => "message", "ts" => "1234567891.654321", "channel" => "C12345678", "thread_ts" => "1234567890.123456", "content" => [], "priorly" => nil}
-        ]
-      }
+      it "delegates to first.update with the Message object" do
+        result
+        expect(sent_message_one).to have_received(:update).with(message)
+      end
+
+      it "returns a SentThread with the updated root and all reply messages" do
+        expect(result.sent_messages).to eq([updated_root, sent_message_two, sent_message_tre])
+      end
     end
 
-    subject(:loaded) { described_class.from_json(data, client:) }
+    context "when updating with a DSL block" do
+      before { allow(sent_message_one).to receive(:update).and_return(updated_root) }
+      subject(:result) { sent_thread.update { text "DSL content" } }
 
-    it "returns a SentThread" do
-      expect(loaded).to be_a(described_class)
-    end
+      it "delegates the block to first.update" do
+        result
+        expect(sent_message_one).to have_received(:update)
+      end
 
-    it "restores each message with the correct ts and channel" do
-      expect(loaded.size).to eq(2)
-      expect(loaded.first).to have_attributes(ts: "1234567890.123456", channel: "C12345678")
-      expect(loaded.last).to have_attributes(ts: "1234567891.654321", thread_ts: "1234567890.123456")
+      it "returns a SentThread with the updated root and all reply messages" do
+        expect(result.sent_messages).to eq([updated_root, sent_message_two, sent_message_tre])
+      end
     end
   end
 

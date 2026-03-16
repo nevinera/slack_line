@@ -109,7 +109,7 @@ SlackLine.configure do |config|
 end
 ```
 
-## Multiple Configurations
+### Multiple Configurations
 
 If you're working in a context where you need to support multiple
 SlackLine configurations, don't worry! The singleton central config is
@@ -135,6 +135,126 @@ BAR_SLACK = SlackLine::Client.new(default_channel: "#team-bar", bot_name: "BarBo
 BAR_SLACK.thread("Message 1", "Message 2").post
 BAR_SLACK.message("Message 3", to: "#bar-team-3").post
 ```
+
+## CLI Scripts
+
+The gem ships with three executable scripts for sending and managing Slack messages
+from the command line. All three accept `-t`/`--slack-token TOKEN` and
+`-n`/`--bot-name NAME` to override the corresponding environment variables.
+Configuration can also come from `SLACK_LINE_SLACK_TOKEN` and friends as described
+above.
+
+### `slack_line_message`
+
+Sends, updates, or previews a single Slack message.
+
+```sh
+# Post a simple message
+slack_line_message --post-to "#general" --save /tmp/msg.json "Something happened!"
+
+# Preview without posting (prints JSON block kit content)
+slack_line_message "Something happened!"
+
+# Post a message using the block-kit DSL on stdin
+echo 'text "Something happened!"' | slack_line_message --post-to "#general" --save /tmp/msg.json
+
+# Append a reply to an existing thread (saved from a prior post)
+slack_line_message --append /tmp/msg.json --save /tmp/msg.json "Follow-up!"
+
+# Update a previously-sent message in place
+slack_line_message --update /tmp/msg.json "Edited message text"
+
+# Update a specific message within a saved thread (0-indexed)
+slack_line_message --update /tmp/msg.json --message-number 2 "Corrected reply"
+```
+
+Options:
+
+* `-p`/`--post-to TARGET` - channel or user to post to
+* `-a`/`--append PATH` - append a reply to the thread saved at PATH
+* `-U`/`--update PATH` - update the message (or thread) saved at PATH
+* `-m`/`--message-number N` - which message in a thread to update (0-indexed;
+  required with `--update` on a thread)
+* `-s`/`--save PATH` - write the sent/updated result to PATH as JSON
+* `-u`/`--look-up-users` - resolve `@mentions` via the Slack API
+* `--cache-path PATH` / `--cache-duration DURATION` - disk-cache user/group lookups
+* `--no-backoff` - disable per-message sleep delays
+
+When no content arguments are given and no DSL is piped, the script reads DSL
+interactively from stdin.
+
+### `slack_line_thread`
+
+Sends or previews a thread (multiple messages posted together).
+
+```sh
+# Post a thread from positional string arguments
+slack_line_thread --post-to "#general" --save /tmp/thread.json "First" "Second" "Third"
+
+# Preview the thread without posting
+slack_line_thread "First" "Second"
+
+# Post a thread from block-kit DSL on stdin
+cat thread.dsl | slack_line_thread --post-to "#general" --save /tmp/thread.json
+```
+
+A DSL block looks like:
+
+```ruby
+message "Simple first message"
+message do
+  text "Fancier second message"
+  context "with some context"
+end
+```
+
+Options mirror `slack_line_message`, minus the update/append flags:
+
+* `-p`/`--post-to TARGET` - channel or user to post to
+* `-s`/`--save PATH` - write the sent result to PATH as JSON
+* `-u`/`--look-up-users`, `--cache-path`, `--cache-duration`, `--no-backoff` -
+  same as above
+
+### `slack_line_stateful_thread`
+
+Designed for long-running processes that need to post a single status message
+and then keep it updated as state changes - for example, a deployment pipeline
+that posts `[running] Deploy started`, updates it to `[done] Deploy finished`,
+and appends replies along the way. The sent message is persisted to a file;
+subsequent invocations load and re-persist that file to know which Slack message
+to update.
+
+Messages are formatted as `[STATE] body`. The `--state` and `--message` flags each
+update their respective part independently; omitting one leaves it unchanged on update.
+
+```sh
+# Initial post - creates /tmp/deploy.json and posts "[running] Deploy started"
+slack_line_stateful_thread --path /tmp/deploy.json --post-to "#deploys" \
+  --state running --message "Deploy started"
+
+# Update the state only - becomes "[done] Deploy started"
+slack_line_stateful_thread --path /tmp/deploy.json --state done
+
+# Update the body only - becomes "[done] Deploy finished"
+slack_line_stateful_thread --path /tmp/deploy.json --message "Deploy finished"
+
+# Update both state and body - becomes "[failed] Something went wrong"
+slack_line_stateful_thread --path /tmp/deploy.json --state failed --message "Something went wrong"
+
+# Append a thread reply without changing the main message
+slack_line_stateful_thread --path /tmp/deploy.json --thread --message "Step 1 complete"
+```
+
+Options:
+
+* `--path PATH` - (required) file path used to persist the sent message between invocations
+* `-p`/`--post-to TARGET` - channel or user; required on the first call, forbidden
+  thereafter
+* `-s`/`--state STATE` - the state label shown in brackets; required on first call
+* `-m`/`--message MESSAGE` - the message body; required on first call and when using
+  `--thread`
+* `--thread` - append a reply instead of updating the main message (mutually exclusive
+  with `--state`)
 
 ## Slack App Permissions
 

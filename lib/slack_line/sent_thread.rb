@@ -10,8 +10,13 @@ module SlackLine
     attr_reader :sent_messages
     alias_method :messages, :sent_messages
     def_delegators :sent_messages, :each, :map, :size, :first, :last, :empty?
-    def_delegators :first, :channel, :ts
+    def_delegators :first, :channel, :ts, :content
     alias_method :thread_ts, :ts
+
+    def update(*text_or_blocks, &dsl_block)
+      updated_root = first.update(*text_or_blocks, &dsl_block)
+      SentThread.new(updated_root, *sent_messages[1..])
+    end
 
     def append(*text_or_blocks, &dsl_block)
       extended = first.append(*text_or_blocks, &dsl_block)
