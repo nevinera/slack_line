@@ -82,7 +82,8 @@ be set via ENV or `SlackLine.configure`:
   is posted, and after each non-thread message is posted.
 * `cache_path` or `SLACK_LINE_CACHE_PATH` - a directory path for
   disk-caching the users and groups lists fetched from the Slack API.
-  When set, SlackLine will use the [lightly](https://github.com/DannyBen/lightly)
+  When set, SlackLine will use the
+  [lightly](https://github.com/DannyBen/lightly)
   gem to cache results to disk, which avoids redundant API calls across
   separate runs. Requires `lightly` to be installed as an optional
   dependency - if it is not available, a `DiskCaching::NoLightly` error
@@ -138,11 +139,11 @@ BAR_SLACK.message("Message 3", to: "#bar-team-3").post
 
 ## CLI Scripts
 
-The gem ships with three executable scripts for sending and managing Slack messages
-from the command line. All three accept `-t`/`--slack-token TOKEN` and
+The gem ships with three executable scripts for sending and managing Slack
+messages from the command line. All three accept `-t`/`--slack-token TOKEN` and
 `-n`/`--bot-name NAME` to override the corresponding environment variables.
-Configuration can also come from `SLACK_LINE_SLACK_TOKEN` and friends as described
-above.
+Configuration can also come from `SLACK_LINE_SLACK_TOKEN` and friends as
+described above.
 
 ### `slack_line_message`
 
@@ -177,7 +178,8 @@ Options:
   required with `--update` on a thread)
 * `-s`/`--save PATH` - write the sent/updated result to PATH as JSON
 * `-u`/`--look-up-users` - resolve `@mentions` via the Slack API
-* `--cache-path PATH` / `--cache-duration DURATION` - disk-cache user/group lookups
+* `--cache-path PATH` / `--cache-duration DURATION` - disk-cache user/group
+  lookups
 * `--no-backoff` - disable per-message sleep delays
 
 When no content arguments are given and no DSL is piped, the script reads DSL
@@ -224,8 +226,9 @@ and appends replies along the way. The sent message is persisted to a file;
 subsequent invocations load and re-persist that file to know which Slack message
 to update.
 
-Messages are formatted as `[STATE] body`. The `--state` and `--message` flags each
-update their respective part independently; omitting one leaves it unchanged on update.
+Messages are formatted as `[STATE] body`. The `--state` and `--message` flags
+each update their respective part independently; omitting one leaves it
+unchanged on update.
 
 ```sh
 # Initial post - creates /tmp/deploy.json and posts "[running] Deploy started"
@@ -247,14 +250,16 @@ slack_line_stateful_thread --path /tmp/deploy.json --thread --message "Step 1 co
 
 Options:
 
-* `--path PATH` - (required) file path used to persist the sent message between invocations
-* `-p`/`--post-to TARGET` - channel or user; required on the first call, forbidden
-  thereafter
-* `-s`/`--state STATE` - the state label shown in brackets; required on first call
-* `-m`/`--message MESSAGE` - the message body; required on first call and when using
-  `--thread`
-* `--thread` - append a reply instead of updating the main message (mutually exclusive
-  with `--state`)
+* `--path PATH` - (required) file path used to persist the sent message between
+  invocations
+* `-p`/`--post-to TARGET` - channel or user; required on the first call,
+  forbidden thereafter
+* `-s`/`--state STATE` - the state label shown in brackets; required on first
+  call
+* `-m`/`--message MESSAGE` - the message body; required on first call and when
+  using `--thread`
+* `--thread` - append a reply instead of updating the main message (mutually
+  exclusive with `--state`)
 
 ## Slack App Permissions
 
@@ -262,9 +267,10 @@ In order to post/update messages, the app behind your `SLACK_LINE_TOKEN` can use
 these permissions:
 
 * `chat:write` - send messages at all.
-* `chat:write.public` - send messages to public channels your app _isn't a member
-  of_ (so you don't need to invite them to the relevant channels to make them work).
+* `chat:write.public` - send messages to public channels your app _isn't a
+  member of_ (so you don't need to invite them to the relevant channels to make
+  them work).
 * `im:write` - start direct messages with individuals.
-* `users:read` and `usergroups:read` - look up users/groups for (a) messaging them
-  directly or (b) supporting the `look_up_users` config option (for those more
-  restrictive workspaces)
+* `users:read` and `usergroups:read` - look up users/groups for (a) messaging
+  them directly or (b) supporting the `look_up_users` config option (for those
+  more restrictive workspaces)
