@@ -52,7 +52,7 @@ module SlackLine
 
     def validate_type!
       unless @text_or_blocks.empty? || blocks?(@text_or_blocks) || strings?(@text_or_blocks)
-        raise(ArgumentError, "Invalid content type: #{@text_or_blocks.class}")
+        raise(ArgumentError, "Invalid content type: #{@text_or_blocks.map(&:class).uniq.join(", ")}")
       end
     end
 

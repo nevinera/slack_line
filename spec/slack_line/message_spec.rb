@@ -15,7 +15,12 @@ RSpec.describe SlackLine::Message do
 
   it "raises an ArgumentError when an invalid content type is provided" do
     expect { described_class.new(42, client:) }
-      .to raise_error(ArgumentError, /Invalid content type/)
+      .to raise_error(ArgumentError, "Invalid content type: Integer")
+  end
+
+  it "lists each class when mixed content types are provided" do
+    expect { described_class.new("Hello", 42, {}, client:) }
+      .to raise_error(ArgumentError, "Invalid content type: String, Integer, Hash")
   end
 
   it "creates content from a DSL block when provided" do
