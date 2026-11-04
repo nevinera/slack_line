@@ -46,4 +46,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "slack-ruby-block-kit", "~> 0.23.0"
   spec.add_dependency "slack-ruby-client", "~> 3.1.0"
+  spec.add_dependency "reline", ">= 0.6"
 end
