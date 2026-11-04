@@ -9,3 +9,15 @@ can do each of those things directly (for simpler messages).
 ## Version 1.1
 
 Fixed incorrect description/summary on gemspec.
+
+## Version 1.2
+
+Added disk-caching for the users and groups lists, through the `cache_path` and
+`cache_duration` config options and matching CLI flags. Added the
+`slack_line_stateful_thread` script, and `content` and `update` on `SentThread`.
+
+## Version 1.3
+
+`message` and `thread` now accept `to:`, as the README showed. Declared `reline`
+as a runtime dependency, which fixes a warning or `LoadError` under Bundler on
+Ruby 4.0. The invalid content error now lists the classes of the bad arguments.
