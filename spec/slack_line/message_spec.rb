@@ -157,5 +157,26 @@ RSpec.describe SlackLine::Message do
         )
       end
     end
+
+    context "with a target supplied at construction" do
+      let(:message) { described_class.new("Hello, Slack!", client:, to: "#constructed") }
+      let(:target) { nil }
+
+      it "posts to the supplied target" do
+        post
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "#constructed", blocks: message.content.as_json, thread_ts: nil, username: "TestBot")
+      end
+
+      context "and a target specified on post" do
+        let(:target) { "#bot-testing" }
+
+        it "posts to the target specified on post" do
+          post
+          expect(slack_client).to have_received(:chat_postMessage)
+            .with(channel: "#bot-testing", blocks: message.content.as_json, thread_ts: nil, username: "TestBot")
+        end
+      end
+    end
   end
 end

@@ -46,6 +46,18 @@ RSpec.describe SlackLine::Client do
         {text: {text: "World", type: "mrkdwn"}, type: "section"}
       ])
     end
+
+    it "accepts a target alongside text" do
+      expect(client.message("Hello", to: "#general").to).to eq("#general")
+    end
+
+    it "accepts a target alongside a DSL block" do
+      expect(client.message(to: "#general") { text "Hello" }.to).to eq("#general")
+    end
+
+    it "rejects unknown keywords" do
+      expect { client.message("Hello", too: "#general") }.to raise_error(ArgumentError, /unknown keyword/)
+    end
   end
 
   describe "#thread" do

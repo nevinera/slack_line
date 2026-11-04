@@ -12,7 +12,7 @@ module SlackLine
 
     memoize def slack_client = Slack::Web::Client.new(token: configuration.slack_token)
 
-    def message(*text_or_blocks, &dsl_block) = Message.new(*text_or_blocks, client: self, &dsl_block)
+    def message(*text_or_blocks, to: nil, &dsl_block) = Message.new(*text_or_blocks, client: self, to:, &dsl_block)
 
     def thread(*messages, &dsl_block) = Thread.new(*messages, client: self, &dsl_block)
 
