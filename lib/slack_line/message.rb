@@ -3,13 +3,16 @@ module SlackLine
     extend Forwardable
     include Memoization
 
-    def initialize(*text_or_blocks, client:, &dsl_block)
+    def initialize(*text_or_blocks, client:, to: nil, &dsl_block)
       @text_or_blocks = text_or_blocks
       @dsl_block = dsl_block
       @client = client
+      @to = to
 
       validate!
     end
+
+    attr_reader :to
 
     memoize def content
       if @dsl_block
@@ -30,7 +33,7 @@ module SlackLine
       "https://app.slack.com/block-kit-builder##{escaped_json}"
     end
 
-    def post(to: nil, thread_ts: nil) = MessageSender.new(message: self, client:, to:, thread_ts:).post
+    def post(to: nil, thread_ts: nil) = MessageSender.new(message: self, client:, to: to || self.to, thread_ts:).post
 
     private
 
@@ -49,7 +52,7 @@ module SlackLine
 
     def validate_type!
       unless @text_or_blocks.empty? || blocks?(@text_or_blocks) || strings?(@text_or_blocks)
-        raise(ArgumentError, "Invalid content type: #{@text_or_blocks.class}")
+        raise(ArgumentError, "Invalid content type: #{@text_or_blocks.map(&:class).uniq.join(", ")}")
       end
     end
 

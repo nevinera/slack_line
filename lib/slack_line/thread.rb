@@ -4,13 +4,16 @@ module SlackLine
     include Enumerable
     include Memoization
 
-    def initialize(*supplied_messages, client:, &dsl_block)
+    def initialize(*supplied_messages, client:, to: nil, &dsl_block)
       @supplied_messages = supplied_messages
       @dsl_block = dsl_block
       @client = client
+      @to = to
 
       validate!
     end
+
+    attr_reader :to
 
     # an Array of SlackLine::Messages
     memoize def messages = message_contents.map { |mc| convert_supplied_message(mc) }
@@ -20,11 +23,12 @@ module SlackLine
     memoize def builder_urls = messages.map(&:builder_url)
 
     def post(to: nil)
+      target = to || self.to || messages.filter_map(&:to).first
       sent_messages = []
       thread_ts = nil
 
       messages.each do |message|
-        sent = message.post(to:, thread_ts:)
+        sent = message.post(to: target, thread_ts:)
         thread_ts ||= sent.ts
         sent_messages << sent
       end

@@ -15,7 +15,12 @@ RSpec.describe SlackLine::Message do
 
   it "raises an ArgumentError when an invalid content type is provided" do
     expect { described_class.new(42, client:) }
-      .to raise_error(ArgumentError, /Invalid content type/)
+      .to raise_error(ArgumentError, "Invalid content type: Integer")
+  end
+
+  it "lists each class when mixed content types are provided" do
+    expect { described_class.new("Hello", 42, {}, client:) }
+      .to raise_error(ArgumentError, "Invalid content type: String, Integer, Hash")
   end
 
   it "creates content from a DSL block when provided" do
@@ -155,6 +160,27 @@ RSpec.describe SlackLine::Message do
           ts: "1234567890.123456",
           channel: "C12345678"
         )
+      end
+    end
+
+    context "with a target supplied at construction" do
+      let(:message) { described_class.new("Hello, Slack!", client:, to: "#constructed") }
+      let(:target) { nil }
+
+      it "posts to the supplied target" do
+        post
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "#constructed", blocks: message.content.as_json, thread_ts: nil, username: "TestBot")
+      end
+
+      context "and a target specified on post" do
+        let(:target) { "#bot-testing" }
+
+        it "posts to the target specified on post" do
+          post
+          expect(slack_client).to have_received(:chat_postMessage)
+            .with(channel: "#bot-testing", blocks: message.content.as_json, thread_ts: nil, username: "TestBot")
+        end
       end
     end
   end
