@@ -124,6 +124,65 @@ RSpec.describe SlackLine::Thread do
       end
     end
 
+    context "when a target channel is supplied at construction" do
+      let(:thread) { described_class.new(message_one, message_two, client:, to: "#constructed") }
+      let(:target_channel) { nil }
+
+      it "posts every message to that channel" do
+        post
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "#constructed", blocks: anything, thread_ts: anything, username: "TestBot")
+          .exactly(2).times
+      end
+
+      context "and a target channel is provided on post" do
+        let(:target_channel) { "#custom-channel" }
+
+        it "posts every message to the channel provided on post" do
+          post
+          expect(slack_client).to have_received(:chat_postMessage)
+            .with(channel: "#custom-channel", blocks: anything, thread_ts: anything, username: "TestBot")
+            .exactly(2).times
+        end
+      end
+
+      context "and a message has its own target" do
+        let(:message_two) { SlackLine::Message.new("Second message", client:, to: "#own-target") }
+
+        it "posts every message to the thread's channel" do
+          post
+          expect(slack_client).to have_received(:chat_postMessage)
+            .with(channel: "#constructed", blocks: anything, thread_ts: anything, username: "TestBot")
+            .exactly(2).times
+        end
+      end
+    end
+
+    context "when only the messages have targets" do
+      let(:message_one) { SlackLine::Message.new("First message", client:, to: "#first") }
+      let(:message_two) { SlackLine::Message.new("Second message", client:, to: "#second") }
+      let(:target_channel) { nil }
+
+      it "posts every message to the first message's target" do
+        post
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "#first", blocks: anything, thread_ts: anything, username: "TestBot")
+          .exactly(3).times
+      end
+    end
+
+    context "when only a later message has a target" do
+      let(:message_two) { SlackLine::Message.new("Second message", client:, to: "#second") }
+      let(:target_channel) { nil }
+
+      it "posts every message to that target" do
+        post
+        expect(slack_client).to have_received(:chat_postMessage)
+          .with(channel: "#second", blocks: anything, thread_ts: anything, username: "TestBot")
+          .exactly(3).times
+      end
+    end
+
     context "when a target channel is not provided" do
       let(:target_channel) { nil }
 

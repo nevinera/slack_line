@@ -71,6 +71,14 @@ RSpec.describe SlackLine::Client do
       expect(thread.messages[0].content.as_json).to eq([{text: {text: "Hi there", type: "mrkdwn"}, type: "section"}])
       expect(thread.messages[1].content.as_json).to eq([{text: {text: "Hello", type: "mrkdwn"}, type: "section"}])
     end
+
+    it "accepts a target alongside messages" do
+      expect(client.thread("Hi there", "Hello", to: "#general").to).to eq("#general")
+    end
+
+    it "accepts a target alongside a DSL block" do
+      expect(client.thread(to: "@someone") { text "Hello" }.to).to eq("@someone")
+    end
   end
 
   describe "#users" do
