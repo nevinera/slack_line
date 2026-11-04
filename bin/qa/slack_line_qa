@@ -19,7 +19,7 @@ MESSAGE_SCRIPT = File.expand_path("../slack_line_message", __dir__)
 THREAD_SCRIPT = File.expand_path("../slack_line_thread", __dir__)
 STATEFUL_THREAD_SCRIPT = File.expand_path("../slack_line_stateful_thread", __dir__)
 
-ScriptResult = Struct.new(:stdout, :stderr, :exit_status, keyword_init: true) do
+ScriptResult = Struct.new(:stdout, :stderr, :exit_status) do
   def success? = exit_status.zero?
   def failure? = !success?
 end
