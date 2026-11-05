@@ -12,6 +12,8 @@ module SlackLine
     attr_reader :content
 
     def text(content, plain: false)
+      raise(ArgumentError, "A section can only have one text.") if @in_progress_section.text
+
       if plain
         @in_progress_section.plain_text(text: content)
       else

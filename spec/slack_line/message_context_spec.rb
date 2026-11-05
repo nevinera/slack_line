@@ -6,7 +6,6 @@ RSpec.describe SlackLine::MessageContext do
         text "Initial _text_"
         divider
         section do
-          text "More text", plain: true
           text "even _more_ text"
           link "Go here", "https://example.com"
         end
