@@ -21,3 +21,12 @@ Added disk-caching for the users and groups lists, through the `cache_path` and
 `message` and `thread` now accept `to:`, as the README showed. Declared `reline`
 as a runtime dependency, which fixes a warning or `LoadError` under Bundler on
 Ruby 4.0. The invalid content error now lists the classes of the bad arguments.
+
+## Version 1.4
+
+**Breaking change:** calling `text` more than once in a `section` now raises an
+`ArgumentError`. It used to silently keep only the last text, because a Slack
+section block has one text field. Use one `section` per text.
+
+Fixed README examples that didn't run, including `context` inside a `section`,
+which Slack doesn't allow.
