@@ -53,7 +53,7 @@ To update a SentThread, you'll need to choose  message:
 ```ruby
 sent_message.update "Edit: never mind, false alarm"
 sent_thread.first.update "Problem Resolved!"
-sent_thread.detect { |m| m =~ /Not yet safe/ }&.update do
+sent_thread.detect { |m| m.content.to_s.include?("Not yet safe") }&.update do
   text "it's safe now"
 end
 ```
@@ -121,7 +121,7 @@ SlackLine methods dispatch to), but you can construct additional clients
 with their own configs easily:
 
 ```ruby
-Slackline.configure do |config|
+SlackLine.configure do |config|
   config.slack_token = ENV["TOKEN"]
   config.default_channel = "#general"
   config.bot_name = "FooBot"
@@ -130,7 +130,7 @@ end
 # Now SlackLine.message (et al) will use SlackLine.client,
 # configured as above.
 
-BAR_SLACK = SlackLine::Client.new(default_channel: "#team-bar", bot_name: "BarBot")
+BAR_SLACK = SlackLine::Client.new(SlackLine.configuration, default_channel: "#team-bar", bot_name: "BarBot")
 
 # And now you can call those methods on `BAR_SLACK` to use a different
 # default channel and name
