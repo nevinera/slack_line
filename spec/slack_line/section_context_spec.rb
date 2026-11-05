@@ -43,6 +43,28 @@ RSpec.describe SlackLine::SectionContext do
         expect(described_class.new(@parent_context) { text "Markdown _text_" }.content.as_json)
           .to eq([{type: "section", text: {type: "mrkdwn", text: "Markdown _text_"}}])
       end
+
+      it "raises an ArgumentError on a second text" do
+        build = -> {
+          described_class.new(@parent_context) do
+            text "First"
+            text "Second"
+          end
+        }
+
+        expect(&build).to raise_error(ArgumentError, "A section can only have one text.")
+      end
+
+      it "raises an ArgumentError on a second text when the first was plain" do
+        build = -> {
+          described_class.new(@parent_context) do
+            text "First", plain: true
+            text "Second"
+          end
+        }
+
+        expect(&build).to raise_error(ArgumentError, "A section can only have one text.")
+      end
     end
 
     describe "#link" do

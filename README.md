@@ -13,13 +13,15 @@ sent_message = SlackLine.message("Something happened!", to: "#general").post
 
 # Construct a more complex message, then send it
 msg = SlackLine.message do
+  context "Don't worry! If this message surprises you, context @foobar"
+
+  # Like a Slack section block, a section holds one text and one link
   section do
-    context "Don't worry! If this message surprises you, context @foobar"
     text "A thing has happened"
-    text "Yeah, it happened for sure"
     link "How bad?", problems_path(problem.id)
   end
 
+  text "Yeah, it happened for sure"
   text "More details.."
 end
 sent_message = msg.post(to: "#general")
