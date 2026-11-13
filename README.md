@@ -66,7 +66,8 @@ instance variables and methods aren't available inside it, only locals.
 
 If you need them, give the block an argument. SlackLine passes the builder
 to it and leaves `self` alone. If a bare block calls one of your own
-methods, SlackLine raises an error that says so.
+methods, SlackLine raises an error that says so. It can't do the same for
+instance variables: `@problem` in a bare block is just nil, with no error.
 
 ```ruby
 class ProblemNotifier

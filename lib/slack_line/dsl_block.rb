@@ -5,6 +5,8 @@ module SlackLine
   #
   # When a block with no arguments calls a method the builder lacks but the
   # caller has, we raise an error that explains the block-argument form.
+  # We can't catch instance variables the same way: inside a bare block,
+  # @foo reads the builder's ivar, which is nil, and Ruby raises nothing.
   module DslBlock
     protected
 
