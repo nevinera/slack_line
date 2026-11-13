@@ -18,7 +18,7 @@ msg = SlackLine.message do
   # Like a Slack section block, a section holds one text and one link
   section do
     text "A thing has happened"
-    link "How bad?", problems_path(problem.id)
+    link "How bad?", "https://example.com/problems/1"
   end
 
   text "Yeah, it happened for sure"
@@ -55,6 +55,29 @@ sent_message.update "Edit: never mind, false alarm"
 sent_thread.first.update "Problem Resolved!"
 sent_thread.detect { |m| m.content.to_s.include?("Not yet safe") }&.update do
   text "it's safe now"
+end
+```
+
+### Blocks with an argument
+
+A DSL block with no arguments runs with the builder as `self`, so you can
+call `text`, `section` and the rest directly. That also means your own
+instance variables and methods aren't available inside it, only locals.
+
+If you need them, give the block an argument. SlackLine passes the builder
+to it and leaves `self` alone:
+
+```ruby
+class ProblemNotifier
+  def notify
+    SlackLine.message(to: "#ops") do |m|
+      m.text "Problem: #{@problem.title}"
+      m.section do |s|
+        s.text "A thing has happened"
+        s.link "How bad?", problems_path(@problem.id)
+      end
+    end.post
+  end
 end
 ```
 

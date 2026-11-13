@@ -1,9 +1,11 @@
 module SlackLine
   class SectionContext
+    include DslBlock
+
     def initialize(parent_context, &block)
       @content = parent_context.section do |s|
         @in_progress_section = s
-        instance_exec(&block)
+        run_dsl_block(block)
       ensure
         @in_progress_section = nil
       end

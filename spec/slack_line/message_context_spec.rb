@@ -34,6 +34,44 @@ RSpec.describe SlackLine::MessageContext do
         .to eq([{type: "section", text: {type: "mrkdwn", text: "externally defined"}}])
     end
 
+    context "when the block takes an argument" do
+      let(:caller_class) do
+        Class.new do
+          def initialize = @title = "From an ivar"
+
+          def build
+            SlackLine::MessageContext.new do |m|
+              m.text @title
+              m.section do |s|
+                s.text "In a section"
+                s.link "Go", url_for("problem")
+              end
+            end
+          end
+
+          private
+
+          def url_for(name) = "https://example.com/#{name}"
+        end
+      end
+
+      it "yields the builder and keeps the caller's ivars and methods" do
+        expect(caller_class.new.build.content.as_json).to eq([
+          {type: "section", text: {type: "mrkdwn", text: "From an ivar"}},
+          {
+            type: "section",
+            text: {type: "mrkdwn", text: "In a section"},
+            accessory: {
+              type: "button",
+              text: {type: "plain_text", text: "Go"},
+              action_id: "link-button",
+              url: "https://example.com/problem"
+            }
+          }
+        ])
+      end
+    end
+
     it "handles a mrkdwn text call properly" do
       expect(described_class.new { text "Hello _world_" }.content.as_json)
         .to eq([{type: "section", text: {type: "mrkdwn", text: "Hello _world_"}}])

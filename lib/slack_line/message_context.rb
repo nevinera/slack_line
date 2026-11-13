@@ -1,9 +1,11 @@
 module SlackLine
   class MessageContext
+    include DslBlock
+
     def initialize(&block)
       @content = ::Slack::BlockKit.blocks do |b|
         @in_progress_blocks = b
-        instance_exec(&block)
+        run_dsl_block(block)
       ensure
         @in_progress_blocks = nil
       end
