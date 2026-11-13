@@ -30,3 +30,12 @@ section block has one text field. Use one `section` per text.
 
 Fixed README examples that didn't run, including `context` inside a `section`,
 which Slack doesn't allow.
+
+## Version 1.5
+
+DSL blocks that take an argument now receive the builder, and `self` stays
+the caller, so the block can use your own methods and instance variables:
+`SlackLine.message { |m| m.text @title }`. Blocks with no arguments work as
+before. When a bare block calls one of your own methods, SlackLine raises an
+error that points at the block-argument form. It can't catch instance
+variables, which are just nil inside a bare block.
