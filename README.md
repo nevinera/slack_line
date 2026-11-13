@@ -65,7 +65,8 @@ call `text`, `section` and the rest directly. That also means your own
 instance variables and methods aren't available inside it, only locals.
 
 If you need them, give the block an argument. SlackLine passes the builder
-to it and leaves `self` alone:
+to it and leaves `self` alone. If a bare block calls one of your own
+methods, SlackLine raises an error that says so.
 
 ```ruby
 class ProblemNotifier
