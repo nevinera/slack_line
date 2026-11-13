@@ -1,8 +1,10 @@
 module SlackLine
   class ThreadContext
+    include DslBlock
+
     def initialize(&block)
       @contents = []
-      instance_exec(&block)
+      run_dsl_block(block)
     end
 
     attr_reader :contents

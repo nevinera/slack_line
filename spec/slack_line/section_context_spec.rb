@@ -33,6 +33,12 @@ RSpec.describe SlackLine::SectionContext do
         .to eq([{type: "section", text: {type: "mrkdwn", text: "externally defined in section"}}])
     end
 
+    it "yields itself to a block that takes an argument" do
+      @section_text = "From an ivar"
+      expect(described_class.new(@parent_context) { |s| s.text @section_text }.content.as_json)
+        .to eq([{type: "section", text: {type: "mrkdwn", text: "From an ivar"}}])
+    end
+
     describe "#text" do
       it "handles plain text properly" do
         expect(described_class.new(@parent_context) { text "Plain text here", plain: true }.content.as_json)

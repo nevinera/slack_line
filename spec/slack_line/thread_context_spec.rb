@@ -105,5 +105,16 @@ RSpec.describe SlackLine::ThreadContext do
       ])
       expect(tc.contents[2]).to be(preconstructed_message)
     end
+
+    it "yields itself to a block that takes an argument" do
+      @first_text = "From an ivar"
+      tc = described_class.new do |t|
+        t.message @first_text
+        t.message { |m| m.text @first_text }
+      end
+
+      expect(tc.contents[0]).to eq("From an ivar")
+      expect(tc.contents[1].as_json).to eq([{type: "section", text: {type: "mrkdwn", text: "From an ivar"}}])
+    end
   end
 end
